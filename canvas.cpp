@@ -20,6 +20,8 @@ Canvas::Canvas(MainWindow *parentWindow, QWidget *parent) : QWidget(parent), mai
     setFocusPolicy(Qt::StrongFocus);
     setMouseTracking(true);
     setFocus();
+
+    // for (int i = 0; i < 500; ++i) createVertex(QPointF{0, i * 10.f}, 25);
 }
 
 QPointF Canvas::getTransformedPos(const QPointF& pos) {
@@ -280,6 +282,28 @@ void Canvas::drawEdge(QPainter& painter, Edge *edge, bool isForceBoth) {
 
     qreal closestDist = std::min(QLineF{screenCenter, closestPoint(edgeLine, normal, screenCenter)}.length(),
                                  QLineF{screenCenter, closestPoint(text, textPos, textCenterOffset, screenCenter)}.length());
+
+
+    // qreal vx1 = startPos.x();
+    // qreal vy1 = startPos.y();
+    // qreal vx2 = endPos.x();
+    // qreal vy2 = endPos.y();
+    // qreal px = screenCenter.x();
+    // qreal py = screenCenter.y();
+    // qreal r = qPow((vx2 - vx1), 2) + qPow((vy2 - vy1), 2);
+    // qreal t = ((vx1 -  px) * (vx2 -  vx1) + (vy1 - py) * (vy2 - vy1)) / r;
+    // qreal d;
+    // if (t >= -1 && t <= 0) {
+    //     d = qAbs((vx2 - vx1) * (vy1 - py) - (vy2 - vy1) * (vx1 - px)) / qSqrt(r);
+    // }
+    // else {
+    //     qreal d1 = qSqrt(qPow((vx1 - px), 2) + qPow((vy1 - py), 2));
+    //     qreal d2 = qSqrt(qPow((vx2 - px), 2) + qPow((vy2 - py), 2));
+    //     d = qMin(d1, d2);
+    // }
+    // qreal closestDist = qMin(d, QLineF{screenCenter, closestPoint(text, textPos, textCenterOffset, screenCenter)}.length());
+    // qDebug() << d << QLineF{screenCenter, closestPoint(edgeLine, normal, screenCenter)}.length();
+
     if (closestDist - LINE_THICKNESS > halfScreenDiagonal) return;
 
     std::unordered_set<int> selectedSet(selectedVertices.begin(), selectedVertices.end());
@@ -607,17 +631,17 @@ void Canvas::delay(int milliseconds) {
     loop.exec();
 }
 
-void Canvas::weightsToInf(Vertex& startVertex, std::vector<int>& checked) {
-    checked.push_back(startVertex.id);
+void Canvas::weightsToInf(Vertex& startVertex, std::vector<int>& unchecked) {
+    unchecked.push_back(startVertex.id);
     startVertex.weight = -1;
 
     for (int id : startVertex.out.vertexId) {
-        if (std::find(checked.begin(), checked.end(), id) != checked.end()) {
+        if (std::find(unchecked.begin(), unchecked.end(), id) != unchecked.end()) {
             continue;
         }
 
         Vertex *vertex = vertices.at(id);
-        weightsToInf(*vertex, checked);
+        weightsToInf(*vertex, unchecked);
     }
 }
 
@@ -634,12 +658,53 @@ std::vector<std::pair<int, int>> Canvas::sortByEdgeWeights(std::vector<int> vert
               });
 
     return vertexEdgePairs;
+
+    // std::vector<std::pair<int, int>> vertexEdgePairs;
+
+    // for (size_t i = 0; i < vertexIds.size(); ++i) {
+    //     vertexEdgePairs.emplace_back(vertexIds[i], edgeIds[i]);
+    // }
+
+    // std::sort(vertexEdgePairs.begin(), vertexEdgePairs.end(),
+    //           [this](const std::pair<int, int>& a, const std::pair<int, int>& b) {
+    //               return vertices.at(a.first)->weight < vertices.at(b.first)->weight;
+    //           });
+
+    // return vertexEdgePairs;
 }
 
+std::vector<std::pair<int, int>> Canvas::sortByWeights(std::vector<int> vertexIds) {
+    std::vector<std::pair<int, int>> vertexIdWeightPair;
+    std::vector<std::pair<int, int>> infIdWeightPair;
+
+    for (const auto& id : vertexIds) {
+        qreal weight = vertices.at(id)->weight;
+        if (weight >= 0) {
+            vertexIdWeightPair.emplace_back(id, weight);
+        }
+        else {
+            infIdWeightPair.emplace_back(id, weight);
+        }
+
+    }
+
+    std::sort(vertexIdWeightPair.begin(), vertexIdWeightPair.end(),
+              [](const std::pair<int, int>& a, const std::pair<int, int>& b) {
+                    return a.second < b.second;
+              });
+
+    std::vector<std::pair<int, int>> merged;
+    merged.reserve(vertexIdWeightPair.size() + infIdWeightPair.size());
+    merged.insert(merged.end(), vertexIdWeightPair.begin(), vertexIdWeightPair.end());
+    merged.insert(merged.end(), infIdWeightPair.begin(), infIdWeightPair.end());
+
+    return merged;
+}
 
 void Canvas::dijkstraAlgorithm(Vertex &startVertex, std::vector<int>& checked) {
     dCurrVertex = startVertex.id;
 
+    // Setting weights of neighboring vertices
     for (size_t i = 0; i < startVertex.out.vertexId.size(); ++i) {
         Vertex *vertex = vertices.at(startVertex.out.vertexId[i]);
         Edge *edge = edges.at(startVertex.out.edgeId[i]);
@@ -648,9 +713,11 @@ void Canvas::dijkstraAlgorithm(Vertex &startVertex, std::vector<int>& checked) {
             continue;
         }
 
+        if (!isDijkstraRunning) return;
         delay(STEP_DELAY_MS);
         update();
 
+        if (!isDijkstraRunning) return;
         dCheckedEdges.push_back(edge->id);
         dCheckedVertices.push_back(vertex->id);
 
@@ -662,48 +729,87 @@ void Canvas::dijkstraAlgorithm(Vertex &startVertex, std::vector<int>& checked) {
         delay(STEP_DELAY_MS);
         update();
 
+        if (!isDijkstraRunning) return;
         dCheckedEdges.pop_back();
         dCheckedVertices.pop_back();
     }
 
-    checked.push_back(startVertex.id);
+    checked.push_back(dCurrVertex);
+    dUnchecked.erase(std::remove(dUnchecked.begin(), dUnchecked.end(), dCurrVertex), dUnchecked.end());
 
-    std::vector<std::pair<int, int>> vertexEdgePairs = sortByEdgeWeights(startVertex.out.vertexId, startVertex.out.edgeId);
+    qDebug() << "checked: " << checked;
+    qDebug() << "dUnchecked: " << dUnchecked;
 
-    for (const auto& [vertexId, edgeId] : vertexEdgePairs) {
-        Vertex *vertex = vertices.at(vertexId);
+    std::vector<std::pair<int, int>> vertexIdWeightPair = sortByWeights(dUnchecked);
 
-        dCheckedEdges.push_back(edgeId);
+    while (vertexIdWeightPair.size() != 0) {
+        int id = vertexIdWeightPair[0].first;
+        Vertex *vertex = vertices.at(id);
 
-        if (std::find(checked.begin(), checked.end(), vertexId) != checked.end()) {
-            continue;
+        if (!isDijkstraRunning) return;
+
+        // Adding edges to dChecked
+        for (int edgeId : vertex->in.edgeId) {
+            if (std::find(dCheckedEdges.begin(), dCheckedEdges.end(), edgeId) != dCheckedEdges.end()) {
+                continue;
+            }
+
+            dCheckedEdges.push_back(edgeId);
         }
 
+        delay(STEP_DELAY_MS / 2);
+        update();
+
+        if (!isDijkstraRunning) return;
         dijkstraAlgorithm(*vertex, checked);
 
-        delay(STEP_DELAY_MS);
-        update();
+        vertexIdWeightPair = sortByWeights(dUnchecked);
     }
+
+
+    // std::vector<std::pair<int, int>> vertexEdgePairs = sortByEdgeWeights(startVertex.out.vertexId, startVertex.out.edgeId);
+
+    // for (const auto& [vertexId, edgeId] : vertexEdgePairs) {
+    //     Vertex *vertex = vertices.at(vertexId);
+
+    //     if (!isDijkstraRunning) return;
+    //     dCheckedEdges.push_back(edgeId);
+
+    //     delay(STEP_DELAY_MS / 2);
+    //     update();
+    //     if (!isDijkstraRunning) return;
+
+    //     if (std::find(checked.begin(), checked.end(), vertexId) != checked.end()) {
+    //         continue;
+    //     }
+
+    //     if (!isDijkstraRunning) return;
+    //     dijkstraAlgorithm(*vertex, checked);
+    // }
 }
 
 void Canvas::Dijkstra(Vertex &startVertex) {
-    // block input
-
+    isDijkstraRunning = true;
+    dCheckedVertices.clear();
+    dCheckedEdges.clear();
+    dEnd = -10;
+    dCurrVertex = -10;
     dFirst = startVertex.id;
 
-    std::vector<int> checked;
-    weightsToInf(startVertex, checked);
+    weightsToInf(startVertex, dUnchecked);
     startVertex.weight = 0;
     update();
 
-    delay(STEP_DELAY_MS + 1000);
+    delay(STEP_DELAY_MS + 500);
 
+    if (!isDijkstraRunning) return;
     std::vector<int> dijkstraChecked;
     dijkstraAlgorithm(startVertex, dCheckedVertices);
 
     dEnd = dCurrVertex;
 
     update();
+    isDijkstraRunning = false;
 }
 
 void Canvas::keyPressEvent(QKeyEvent *event) {
@@ -784,6 +890,7 @@ void Canvas::keyPressEvent(QKeyEvent *event) {
             vertex->weight = -2;
         }
 
+        isDijkstraRunning = false;
         dCheckedVertices.clear();
         dCheckedEdges.clear();
         dFirst = -10;
@@ -839,6 +946,8 @@ void Canvas::keyPressEvent(QKeyEvent *event) {
 
     if (key == Qt::Key_Delete) {
         if (selectedVertices.size() <= 0 && selectedEdges.size() <= 0) return;
+
+        if (isDijkstraRunning) return;
 
         for (int id : selectedEdges) {
             deleteEdge(id);

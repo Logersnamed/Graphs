@@ -59,7 +59,7 @@ public:
     const qreal LINE_THICKNESS = 5;
     const qreal GRID_GAP = 16;
     const int GRID_DIVISON = 5;
-    const int STEP_DELAY_MS = 1000;
+    const int STEP_DELAY_MS = 300;
     // const QFont font = {"Times New Roman", 16};
     // const QFont font = {"Cambria", 16};
     QFont font = {"Latin Modern Math", 16};
@@ -116,15 +116,17 @@ private:
     void dijkstraAlgorithm(Vertex &startVertex, std::vector<int>& checked);
     // std::vector<int> sortByEdgeWeights(std::vector<int> vertexIds, std::vector<int> edgeIds);
     std::vector<std::pair<int, int>> sortByEdgeWeights(std::vector<int> vertexIds, std::vector<int> edgeIds);
+    std::vector<std::pair<int, int>> sortByWeights(std::vector<int> vertexIds);
 
-
+    bool isDijkstraRunning = false;
+    std::vector<int> dUnchecked;
     std::vector<int> dCheckedEdges;
     std::vector<int> dCheckedVertices;
     int dFirst = -10;
     int dEnd = -10;
     int dCurrVertex = -10;
 
-    const QColor dFirstColor = QColor(255, 205, 178);
+    const QColor dFirstColor = QColor(255, 228, 212);
     const QColor dChekcedColor = QColor(255, 180, 162);
     const QColor dCurrColor = QColor(229, 152, 155);
     const QColor dEndColor = QColor(181, 131, 141);
