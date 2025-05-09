@@ -6,7 +6,7 @@
 SelectTool::SelectTool() {}
 
 void SelectTool::onLeftClick(QMouseEvent *event) {
-    qDebug() << "Select";
+
 }
 
 QCursor SelectTool::getCursor() {

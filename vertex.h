@@ -15,7 +15,7 @@ public:
     int radius;
     QPointF pos;
 
-    int weight = -2;
+    qreal weight = -2;
 
     struct {
         std::vector<int> vertexId;

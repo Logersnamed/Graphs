@@ -30,6 +30,15 @@ class Canvas : public QWidget {
     PenTool *penTool = new PenTool(this);
     Tools *currentTool = selectTool;
 
+
+    double displayedFps = 0.0;
+
+    QElapsedTimer fpsTimer;
+    int frameCount = 0;
+    qreal currentFps = 0;
+
+
+
 public:
     int totalVertices = 0;
     int totalEdges = 0;
@@ -39,6 +48,8 @@ public:
     bool isFirstLink = true;
     std::vector<int> intPressed1;
     std::vector<int> intPressed2;
+    int floatExponent1 = 0;
+    int floatExponent2 = 0;
 
     std::vector<int> selectedVertices;
     std::vector<int> selectedEdges;
@@ -59,10 +70,10 @@ public:
     const qreal LINE_THICKNESS = 5;
     const qreal GRID_GAP = 16;
     const int GRID_DIVISON = 5;
-    const int STEP_DELAY_MS = 300;
     // const QFont font = {"Times New Roman", 16};
     // const QFont font = {"Cambria", 16};
     QFont font = {"Latin Modern Math", 16};
+    QFont textFont = {"Latin Modern Math", 13};
     const QCursor PAN_CURSOR = Qt::ClosedHandCursor;
 
     MainWindow *mainWindow;
@@ -78,6 +89,19 @@ public:
     void deleteEdge(int id);
     void deleteVertex(int id);
 
+    QStringList tutorialText = {
+        "Use middle mouse button for navigation",
+        "Place vertices using pen tool",
+        "Select two vertices and start typing to enter weight between",
+        "Press space to start entering weight in another direction",
+        "Press Delete to delete vertices or edges",
+        "V - Select Tool",
+        "B - Pen Tool",
+        "A - Select all",
+        "D - Deselect all"
+    };
+
+
 private:
     void mousePressEvent(QMouseEvent *event) override;
     void paintEvent(QPaintEvent *event) override;
@@ -88,12 +112,11 @@ private:
 
     QPointF getClosestPointToEdge(QLineF edgeLine, QString text, QFontMetrics fontMetrics);
     void drawEdge(QPainter& painter, int id, QPointF startPos, QPointF endPos, int value, int startId, int endId, bool isForceBoth);
-    void drawEdge(QPainter& painter, Edge *edge, bool isForceBoth);
+    void drawEdge(QPainter& painter, Edge *edge, QString text, bool isForceBoth);
     void drawArrow(QPainter& painter, QLineF invertedEdgeLine, qreal vertexRadius);
     void drawFakeEdges(QPainter& painter);
     void drawGrid(QPainter& painter, const QPointF& center);
-
-    void drawDebug(QPainter& painter);
+    void drawTutorial(QPainter& painter);
 
     bool isVertexSelected(int vertexId);
     bool isEdgeSelected(const Edge& edge);
@@ -102,7 +125,7 @@ private:
     void drawVertices(QPainter& painter);
     void drawEdges(QPainter& painter);
     int getNumFromArray(std::vector<int> array);
-    void linkVertices(int firstId, int secondId, int value);
+    void linkVertices(int firstId, int secondId, qreal weight);
 
     // void weightsToInf(Vertex& startVertex, std::vector<int> checked);
     // std::vector<int> sortByEdgeWeights(std::vector<int> vertexIds, std::vector<int> edgeIds);
@@ -114,23 +137,34 @@ private:
     void Dijkstra(Vertex &startVertex);
     void weightsToInf(Vertex& startVertex, std::vector<int>& checked); // Pass by reference now
     void dijkstraAlgorithm(Vertex &startVertex, std::vector<int>& checked);
-    // std::vector<int> sortByEdgeWeights(std::vector<int> vertexIds, std::vector<int> edgeIds);
-    std::vector<std::pair<int, int>> sortByEdgeWeights(std::vector<int> vertexIds, std::vector<int> edgeIds);
-    std::vector<std::pair<int, int>> sortByWeights(std::vector<int> vertexIds);
+    int getMinWeightVertex(std::vector<int> vertexIds);
+
+    void showHide(std::vector<int>& empty, const std::vector<int> ref);
+    void dijkstraEndAnimation(const std::vector<int> checked);
+
+    void cancelDijkstra();
 
     bool isDijkstraRunning = false;
     std::vector<int> dUnchecked;
     std::vector<int> dCheckedEdges;
     std::vector<int> dCheckedVertices;
-    int dFirst = -10;
-    int dEnd = -10;
-    int dCurrVertex = -10;
+    std::vector<int> dEndAnim;
+    int dFirst = -1;
+    int dEnd = -1;
+    int dCurrVertex = -1;
+
+    const int STEP_DELAY_MS = 300;
+    const int START_DELAY_MS = 800;
+    const int EDGE_STEP_DELAY_MS = STEP_DELAY_MS / 2;
+    const int END_DELAY_MS = STEP_DELAY_MS / 4;
+    const int FLICK_DELAY_MS = STEP_DELAY_MS / 2;
 
     const QColor dFirstColor = QColor(255, 228, 212);
     const QColor dChekcedColor = QColor(255, 180, 162);
     const QColor dCurrColor = QColor(229, 152, 155);
     const QColor dEndColor = QColor(181, 131, 141);
     const QColor dWeightColor = QColor(109, 104, 117);
+    const QColor dEndAnimColor = QColor(215, 255, 132);
 };
 
 #endif // CANVAS_H

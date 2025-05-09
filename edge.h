@@ -6,14 +6,14 @@
 class Edge {
 
 public:
-    Edge(int edgeId, int fristId, int secodnId, int weight, QWidget* parent = nullptr);
+    Edge(int edgeId, int fristId, int secodnId, qreal weight, QWidget* parent = nullptr);
 
     int id;
 
     int startId;
     int endId;
 
-    int weight;
+    qreal weight;
 };
 
 #endif // EDGE_H

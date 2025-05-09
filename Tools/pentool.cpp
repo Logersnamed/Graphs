@@ -7,8 +7,6 @@
 PenTool::PenTool(Canvas *canvas) : canvas(canvas) {}
 
 void PenTool::onLeftClick(QMouseEvent *event) {
-    qDebug() << "Pen";
-
     canvas->createVertex(canvas->getTransformedPos(event->pos()), canvas->VERTEX_RADIUS);
 }
 
