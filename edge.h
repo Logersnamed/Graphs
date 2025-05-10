@@ -3,10 +3,14 @@
 
 #include <QWidget>
 
+class Canvas;
+
 class Edge {
 
 public:
     Edge(int edgeId, int fristId, int secodnId, qreal weight, QWidget* parent = nullptr);
+
+    // void draw(Canvas *canvas, QPainter& painter);
 
     int id;
 

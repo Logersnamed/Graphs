@@ -19,6 +19,8 @@ typedef std::unordered_map<int, Edge*> edgeMap;
 class Canvas : public QWidget {
     Q_OBJECT
 
+public:
+
     QPoint lastMousePos;
     QPointF offset = {0, 0};
     qreal scaleFactor = 1.0;
@@ -30,7 +32,7 @@ class Canvas : public QWidget {
     PenTool *penTool = new PenTool(this);
     Tools *currentTool = selectTool;
 
-public:
+
     int totalVertices = 0;
     int totalEdges = 0;
     vertexMap vertices;
@@ -52,7 +54,6 @@ public:
 
     const qreal ZOOM_OUT_LIMIT = 0.25;
     const int VERTEX_RADIUS = 25;
-    const QPointF WEIGHT_TEXT_OFFSET = {0, - VERTEX_RADIUS - 15.0};
     const qreal EDGE_TEXT_SHIFT = 15;
     const qreal EDGE_BOTH_SHIFT = 12;
     const qreal EDGE_SELECTION_RANGE = 15;
@@ -94,7 +95,6 @@ public:
         "\"D\" - Deselect all"
     };
 
-private:
     void mousePressEvent(QMouseEvent *event) override;
     void paintEvent(QPaintEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
@@ -103,7 +103,6 @@ private:
     void mouseReleaseEvent(QMouseEvent *event) override;
 
     QPointF getClosestPointToEdge(QLineF edgeLine, QString text, QFontMetrics fontMetrics);
-    void drawEdge(QPainter& painter, int id, QPointF startPos, QPointF endPos, int value, int startId, int endId, bool isForceBoth);
     void drawEdge(QPainter& painter, Edge *edge, QString text, bool isForceBoth);
     void drawArrow(QPainter& painter, QLineF invertedEdgeLine, qreal vertexRadius);
     void drawFakeEdges(QPainter& painter);
@@ -117,11 +116,6 @@ private:
     void drawEdges(QPainter& painter);
     int getNumFromArray(std::vector<int> array);
     void linkVertices(int firstId, int secondId, qreal weight);
-
-    // void weightsToInf(Vertex& startVertex, std::vector<int> checked);
-    // std::vector<int> sortByEdgeWeights(std::vector<int> vertexIds, std::vector<int> edgeIds);
-    // void dijkstraAlgorithm(Vertex &startVertex, std::vector<int>& checked);
-    // void Dijkstra(Vertex& startVertex);
 
     void delay(int milliseconds);
 
@@ -150,12 +144,11 @@ private:
     const int END_DELAY_MS = STEP_DELAY_MS / 4;
     const int FLICK_DELAY_MS = STEP_DELAY_MS / 2;
 
-    const QColor dFirstColor = QColor(255, 228, 212);
     const QColor dChekcedColor = QColor(255, 180, 162);
-    const QColor dCurrColor = QColor(229, 152, 155);
-    const QColor dEndColor = QColor(181, 131, 141);
-    const QColor dWeightColor = QColor(109, 104, 117);
-    const QColor dEndAnimColor = QColor(215, 255, 132);
+
+    // QPointF getVertexPos(int id);
+    void resetInputState();
+    Vertex* getClickedVertex(QPointF clickPos);
 };
 
 #endif // CANVAS_H

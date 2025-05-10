@@ -1,9 +1,7 @@
 #include "mainwindow.h"
 #include "canvas.h"
-#include "sidebar.h"
 
 #include <QApplication>
-#include <QDockWidget>
 
 int main(int argc, char *argv[])
 {
@@ -17,10 +15,6 @@ int main(int argc, char *argv[])
 
     Canvas *canvas = new Canvas(&window);
     window.setCentralWidget(canvas);
-
-    // SideBar *sidebar = new SideBar();
-    // sidebar->setStyleSheet("background-color:  #f9f9f9");
-    // window.addDockWidget(Qt::RightDockWidgetArea, sidebar);
 
     window.show();
 

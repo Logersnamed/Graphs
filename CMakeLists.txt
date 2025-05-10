@@ -29,7 +29,6 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         Tools/tools.h Tools/tools.cpp
         Tools/pentool.h Tools/pentool.cpp
         Tools/selecttool.h Tools/selecttool.cpp
-        sidebar.h sidebar.cpp
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET Graphs APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
