@@ -2,17 +2,17 @@
 #include "vertex.h"
 #include "edge.h"
 #include "mainwindow.h"
-#include <QElapsedTimer>
-#include <QTimer>
 
 #include <unordered_map>
-
+#include <algorithm>
 #include <QDebug>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QKeyEvent>
 #include <QFontMetrics>
 #include <QPainterPath>
+#include <QEventLoop>
+#include <QTimer>
 
 #define INF -1
 
@@ -24,29 +24,6 @@ Canvas::Canvas(MainWindow *parentWindow, QWidget *parent) : QWidget(parent), mai
     setFocusPolicy(Qt::StrongFocus);
     setMouseTracking(true);
     setFocus();
-
-    // createVertex(QPointF(177, 475), 25);
-    // createVertex(QPointF(140, 301), 25);
-    // linkVertices(0, 1, 4);
-    // createVertex(QPointF(299, 171), 25);
-    // linkVertices(1, 2, 6);
-    // createVertex(QPointF(536, 252), 25);
-    // linkVertices(2, 3, 2);
-    // createVertex(QPointF(471, 431), 25);
-    // linkVertices(3, 4, 6);
-    // createVertex(QPointF(333, 493), 25);
-    // linkVertices(4, 5, 8);
-    // linkVertices(0, 5, 3);
-    // linkVertices(0, 3, 12);
-    // linkVertices(4, 2, 6);
-    // linkVertices(2, 4, 4);
-    // linkVertices(1, 3, 15);
-    // linkVertices(1, 5, 7);
-    // linkVertices(4, 1, 2);
-    // linkVertices(2, 0, 1);
-    // linkVertices(3, 1, 2);
-
-    // for (int i = 0; i < 100; ++i) createVertex(QPointF{0, i * 10.f}, 25);
 }
 
 QPointF Canvas::getTransformedPos(const QPointF& pos) {
@@ -85,34 +62,12 @@ void Canvas::createVertex(QPointF pos, int radius) {
     qDebug() << "createVertex(" << pos << "," << radius << ");";
 }
 
-bool Canvas::isInMap(const intMap map, int key) {
-    return map.find(key) != map.end();
-}
-
-bool isContainsFirst(const std::vector<std::pair<int, int>>& vec, int value) {
-    for (const auto& p : vec) {
-        if (p.first == value) {
-            return true;
-        }
-    }
-    return false;
-}
-
-bool isContainsSecond(const std::vector<std::pair<int, int>>& vec, int value) {
-    for (const auto& p : vec) {
-        if (p.second == value) {
-            return true;
-        }
-    }
-    return false;
-}
-
-bool isContain(std::vector<int> vector, int value) {
+bool contains(std::vector<int> vector, int value) {
     return std::find(vector.begin(), vector.end(), value) != vector.end();
 }
 
 void Canvas::linkVertices(int firstId, int secondId, qreal weight) {
-    if (isContain(vertices.at(firstId)->out.vertexId, secondId)) {
+    if (contains(vertices.at(firstId)->out.vertexId, secondId)) {
         qDebug() << "Already connected";
         return;
     }
@@ -165,9 +120,7 @@ void Canvas::drawVertices(QPainter& painter) {
         }
 
         if (vertex->weight > -2) {
-            bool isChecked = std::find(dCheckedVertices.begin(), dCheckedVertices.end(), id) != dCheckedVertices.end();
-            bool isEnd = std::find(dEndAnim.begin(), dEndAnim.end(), id) != dEndAnim.end();
-            if (isEnd) {
+            if (contains(dEndAnim, id)) {
                 painter.setBrush(dEndAnimColor);
             }
             else if (id == dEnd) {
@@ -179,13 +132,13 @@ void Canvas::drawVertices(QPainter& painter) {
             else if (id == dFirst) {
                 painter.setBrush(dFirstColor);
             }
-            else if (isChecked) {
+            else if (contains(dCheckedVertices, id)) {
                 painter.setBrush(dChekcedColor);
             }
-
         }
 
-        painter.drawEllipse(vertex->pos, vertex->radius, vertex->radius);
+        vertex->draw(painter);
+        // painter.drawEllipse(vertex->pos, vertex->radius, vertex->radius);
         painter.setPen(Qt::black);
         painter.setBrush(Qt::white);
         font.setItalic(false);
@@ -206,19 +159,6 @@ void Canvas::drawVertices(QPainter& painter) {
             painter.setPen(Qt::black);
         }
     }
-}
-
-bool Canvas::isEdgeSelected(const Edge& edge) {
-    std::unordered_set<int> selectedSet(selectedVertices.begin(), selectedVertices.end());
-    return selectedSet.count(edge.startId) && selectedSet.count(edge.endId);
-}
-
-QPointF getShiftAccordingAngle(const QLineF& line, const QPointF& absShift) {
-    qreal length = line.length();
-    qreal sin = line.dy() / length;
-    qreal cos = line.dx() / length;
-
-    return {absShift.x() * sin, absShift.y() * -cos};
 }
 
 QPointF newVector(const QLineF& direction, const qreal length) {
@@ -300,7 +240,7 @@ void Canvas::drawEdge(QPainter& painter, Edge *edge, QString text, bool isForceB
     QLineF normal(screenCenter, {0, 0});
     normal.setAngle(edgeLine.angle() + 90);
 
-    if (isContain(vertices.at(startId)->in.vertexId, endId) || isForceBoth) {
+    if (contains(vertices.at(startId)->in.vertexId, endId) || isForceBoth) {
         QPointF bothShift{0, 0};
         bothShift = newVector(normal, EDGE_BOTH_SHIFT / 2);
         startPos += bothShift;
@@ -345,7 +285,6 @@ void Canvas::drawEdge(QPainter& painter, Edge *edge, QString text, bool isForceB
     painter.setBrush(Qt::black);
     painter.setPen(Qt::black);
 }
-
 
 void Canvas::drawEdges(QPainter& painter) {
     painter.setBrush(Qt::black);
@@ -447,8 +386,6 @@ void Canvas::drawTutorial(QPainter& painter) {
     }
 }
 
-
-
 void Canvas::paintEvent(QPaintEvent *event) {
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
@@ -461,18 +398,13 @@ void Canvas::paintEvent(QPaintEvent *event) {
     halfScreenDiagonal = qSqrt(QPointF::dotProduct(center, center)) / scaleFactor;
 
     drawGrid(painter, center);
-
     drawTutorial(painter);
 
     painter.setFont(font);
 
-
-
     drawEdges(painter);
     drawFakeEdges(painter);
     drawVertices(painter);
-
-    update();
 }
 
 void Canvas::mousePressEvent(QMouseEvent *event) {
@@ -500,8 +432,7 @@ void Canvas::mousePressEvent(QMouseEvent *event) {
                 if (!isShiftModifier) selectedVertices.clear();
                 isVertexClicked = true;
 
-                bool isSelected = std::find(selectedVertices.begin(), selectedVertices.end(), id) != selectedVertices.end();
-                if (!isSelected) {
+                if (!contains(selectedVertices, id)) {
                     selectedVertices.push_back(id);
                 }
 
@@ -524,7 +455,7 @@ void Canvas::mousePressEvent(QMouseEvent *event) {
                     QLineF normal(clickPos, {0, 0});
                     normal.setAngle(edgeLine.angle() + 90);
 
-                    if (isContain(vertices.at(edge->startId)->in.vertexId, edge->endId)) {
+                    if (contains(vertices.at(edge->startId)->in.vertexId, edge->endId)) {
                         QPointF bothShift{0, 0};
                         bothShift = newVector(normal, EDGE_BOTH_SHIFT / 2);
                         startPos += bothShift;
@@ -645,9 +576,6 @@ void Canvas::deleteVertex(int id) {
     vertices.erase(id);
 }
 
-#include <QEventLoop>
-#include <QTimer>
-
 void Canvas::delay(int milliseconds) {
     QEventLoop loop;
     QTimer::singleShot(milliseconds, &loop, &QEventLoop::quit);
@@ -659,7 +587,7 @@ void Canvas::weightsToInf(Vertex& startVertex, std::vector<int>& unchecked) {
     startVertex.weight = INF;
 
     for (int id : startVertex.out.vertexId) {
-        if (std::find(unchecked.begin(), unchecked.end(), id) != unchecked.end()) {
+        if (contains(unchecked, id)) {
             continue;
         }
 
@@ -689,11 +617,9 @@ void Canvas::dijkstraAlgorithm(Vertex &startVertex, std::vector<int>& checked) {
     dCurrVertex = startVertex.id;
 
     for (int id : startVertex.in.edgeId) {
-        bool isCheckedEdge = std::find(dCheckedEdges.begin(), dCheckedEdges.end(), id) != dCheckedEdges.end();
-        if (isCheckedEdge) continue;
+        if (contains(dCheckedEdges, id)) continue;
 
-        bool isCheckedVertex = std::find(checked.begin(), checked.end(), edges.at(id)->startId) != checked.end();
-        if (!isCheckedVertex) continue;
+        if (!contains(checked, edges.at(id)->startId)) continue;
 
         delay(EDGE_STEP_DELAY_MS);
 
@@ -710,7 +636,7 @@ void Canvas::dijkstraAlgorithm(Vertex &startVertex, std::vector<int>& checked) {
         delay(STEP_DELAY_MS);
 
         if (!isDijkstraRunning) return;
-        bool isCheckedVertex = std::find(checked.begin(), checked.end(), vertex->id) != checked.end();
+        bool isCheckedVertex = contains(checked, vertex->id);
 
         dCheckedEdges.push_back(edge->id);
         dCheckedVertices.push_back(vertex->id);
@@ -818,7 +744,7 @@ void Canvas::keyPressEvent(QKeyEvent *event) {
 
     if (key >= '0' && key <= '9') {
         if (selectedVertices.size() != 2) return;
-        if (isContain(vertices.at(selectedVertices[0])->out.vertexId, selectedVertices[1])) return;
+        if (contains(vertices.at(selectedVertices[0])->out.vertexId, selectedVertices[1])) return;
         if (isDijkstraRunning) return;
 
         if (isFirstLink) {
@@ -829,7 +755,7 @@ void Canvas::keyPressEvent(QKeyEvent *event) {
             if (floatExponent1) floatExponent1 *= 10;
         }
         else {
-            if (isContain(vertices.at(selectedVertices[1])->out.vertexId, selectedVertices[0])) return;
+            if (contains(vertices.at(selectedVertices[1])->out.vertexId, selectedVertices[0])) return;
             if (intPressed2.size() == 0 && key == 0 ) return;
             if (intPressed2.size() == 6) return;
 
@@ -974,22 +900,3 @@ void Canvas::keyPressEvent(QKeyEvent *event) {
 
     update();
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

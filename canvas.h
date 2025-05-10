@@ -30,15 +30,6 @@ class Canvas : public QWidget {
     PenTool *penTool = new PenTool(this);
     Tools *currentTool = selectTool;
 
-
-    double displayedFps = 0.0;
-
-    QElapsedTimer fpsTimer;
-    int frameCount = 0;
-    qreal currentFps = 0;
-
-
-
 public:
     int totalVertices = 0;
     int totalEdges = 0;
@@ -92,15 +83,16 @@ public:
     QStringList tutorialText = {
         "Use middle mouse button for navigation",
         "Place vertices using pen tool",
-        "Select two vertices and start typing to enter weight between",
+        "Select two vertices and start typing to enter the weight between",
         "Press space to start entering weight in another direction",
         "Press Delete to delete vertices or edges",
-        "V - Select Tool",
-        "B - Pen Tool",
-        "A - Select all",
-        "D - Deselect all"
+        "Select vertex and Run Dijkstra algorithm",
+        "\"F\" - Run Dijkstra algorithm",
+        "\"V\" - Select Tool",
+        "\"B\" - Pen Tool",
+        "\"A\" - Select all",
+        "\"D\" - Deselect all"
     };
-
 
 private:
     void mousePressEvent(QMouseEvent *event) override;
@@ -120,7 +112,6 @@ private:
 
     bool isVertexSelected(int vertexId);
     bool isEdgeSelected(const Edge& edge);
-    bool isInMap(intMap map, int key);
     QPointF getAbsoluteCenter();
     void drawVertices(QPainter& painter);
     void drawEdges(QPainter& painter);

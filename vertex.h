@@ -17,6 +17,8 @@ public:
 
     qreal weight = -2;
 
+    void draw(QPainter& painter);
+
     struct {
         std::vector<int> vertexId;
         std::vector<int> edgeId;
