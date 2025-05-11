@@ -27,7 +27,7 @@ void Vertex::draw(Canvas *canvas, QPainter& painter) {
         return;
     }
 
-    if (canvas->isVertexSelected(id)) {
+    if (isSelected) {
         painter.setPen(Qt::green);
     }
 

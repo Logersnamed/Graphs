@@ -149,6 +149,13 @@ public:
     // QPointF getVertexPos(int id);
     void resetInputState();
     Vertex* getClickedVertex(QPointF clickPos);
+
+    std::vector<int> deletedEdges;
+    std::vector<int> deletedVertices;
+
+    void selectVertex(int id);
+    void deselectFirstVertex();
+    void deselectAllVertices();
 };
 
 #endif // CANVAS_H
