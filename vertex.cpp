@@ -22,8 +22,8 @@ static QPointF getTextCenterAlign(QFontMetrics fm, QString text) {
 }
 
 void Vertex::draw(Canvas *canvas, QPainter& painter) {
-    qreal distToCenter = QLineF{canvas->screenCenter, pos}.length();
-    if (distToCenter - radius - LINE_THICKNESS > canvas->halfScreenDiagonal) {
+    qreal distToCenter = QLineF{canvas->getScreenCenter(), pos}.length();
+    if (distToCenter - radius - LINE_THICKNESS > canvas->getHalfScreenDiagonal()) {
         return;
     }
 

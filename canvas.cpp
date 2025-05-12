@@ -28,9 +28,91 @@ Canvas::Canvas(MainWindow *parentWindow, QWidget *parent) : QWidget(parent), mai
     for (int i = 0; i < 300; ++i) createVertex({0, i * 10.f}, VERTEX_RADIUS);
 }
 
-// QPointF Canvas::getVertexPos(int id) {
-//     return vertices.at(id)->pos;
-// }
+bool contains(std::vector<int> vector, int value) {
+    return std::find(vector.begin(), vector.end(), value) != vector.end();
+}
+
+int absCeil(qreal value) {
+    return value >= 0 ? ceil(value) : floor(value);
+}
+
+void removeFromBothByFirst(std::vector<int>& vec1, std::vector<int>& vec2, int value) {
+    for (size_t i = 0; i < vec1.size(); ++i) {
+        if (vec1[i] == value) {
+            vec1.erase(vec1.begin() + i);
+            vec2.erase(vec2.begin() + i);
+            return;
+        }
+    }
+}
+
+void delay(int milliseconds) {
+    QEventLoop loop;
+    QTimer::singleShot(milliseconds, &loop, &QEventLoop::quit);
+    loop.exec();
+}
+
+Vertex* Canvas::getVertex(int id) {
+    return vertices.at(id);
+}
+
+QPointF Canvas::getScreenCenter() {
+    return screenCenter;
+}
+
+qreal Canvas::getHalfScreenDiagonal() {
+    return halfScreenDiagonal;
+}
+
+QPointF Canvas::getTransformedPos(const QPointF& pos) {
+    QTransform transform;
+    transform.translate(offset.x(), offset.y());
+    transform.scale(scaleFactor, scaleFactor);
+    return transform.inverted().map(pos);
+}
+
+int Canvas::getNumFromArray(std::vector<int> array) {
+    int num = 0;
+    int i = array.size();
+    for (int digit : array) {
+        num += digit * pow(10, i - 1);
+        --i;
+    }
+    return num;
+}
+
+QPointF Canvas::getAbsoluteCenter() {
+    QSize mainWindowSize = mainWindow->size();
+    return {mainWindowSize.rwidth() / 2.0f, mainWindowSize.rheight() / 2.0f};
+}
+
+Vertex* Canvas::getClickedVertex(QPointF clickPos) {
+    Vertex* clickedVertex = nullptr;
+    for (const auto& [id, vertex] : vertices) {
+        bool isInRadius = QLineF(clickPos, vertex->pos).length() <= vertex->radius;
+        if (!isInRadius) continue;
+
+        clickedVertex = vertex;
+    }
+    return clickedVertex;
+}
+
+int Canvas::getMinWeightVertex(std::vector<int> vertexIds) {
+    int minId = vertexIds[0];
+    qreal minWeight = vertices.at(minId)->weight;
+
+    for (int id : vertexIds) {
+        qreal weight = vertices.at(id)->weight;
+
+        if (weight == INF) continue;
+        if (weight < minWeight) {
+            minId = id;
+            minWeight = weight;
+        }
+    }
+
+    return minId;
+}
 
 void Canvas::resetInputState() {
     intPressed1.clear();
@@ -57,23 +139,6 @@ void Canvas::deselectAllVertices() {
     selectedVertices.clear();
 }
 
-QPointF Canvas::getTransformedPos(const QPointF& pos) {
-    QTransform transform;
-    transform.translate(offset.x(), offset.y());
-    transform.scale(scaleFactor, scaleFactor);
-    return transform.inverted().map(pos);
-}
-
-int Canvas::getNumFromArray(std::vector<int> array) {
-    int num = 0;
-    int i = array.size();
-    for (int digit : array) {
-        num += digit * pow(10, i - 1);
-        --i;
-    }
-    return num;
-}
-
 void Canvas::createVertex(QPointF pos, int radius) {
     QString name = QString::number(totalVertices);
     vertices.insert({totalVertices, new Vertex(name, totalVertices, radius, pos, this)});
@@ -93,10 +158,6 @@ void Canvas::createVertex(QPointF pos, int radius) {
     // qDebug() << "createVertex(" << pos << "," << radius << ");";
 }
 
-bool contains(std::vector<int> vector, int value) {
-    return std::find(vector.begin(), vector.end(), value) != vector.end();
-}
-
 void Canvas::linkVertices(int firstId, int secondId, qreal weight) {
     if (contains(vertices.at(firstId)->out.vertexId, secondId)) {
         qDebug() << "Already connected";
@@ -108,32 +169,13 @@ void Canvas::linkVertices(int firstId, int secondId, qreal weight) {
     vertices.at(firstId)->out.vertexId.push_back(secondId);
     vertices.at(firstId)->out.edgeId.push_back(totalEdges);
 
-    edges.insert({totalEdges, new Edge(totalEdges, firstId, secondId, weight)});
+    edges.insert({totalEdges, new Edge(QString::number(weight), totalEdges, firstId, secondId, weight)});
 
     ++totalEdges;
 
     update();
 
     // qDebug() << "linkVertices(" << firstId << "," << secondId << "," << weight << ");";
-}
-
-bool Canvas::isVertexSelected(int vertexId) {
-    for (int selectedIds : selectedVertices) {
-        if (vertexId == selectedIds) return true;
-    }
-    return false;
-}
-
-QPointF getTextCenterAlign(QFontMetrics fm, QString text) {
-    int width = fm.horizontalAdvance(text);
-    int height = fm.ascent() - fm.descent();
-
-    return {-width / 2.0f, height / 2.0f};
-}
-
-QPointF Canvas::getAbsoluteCenter() {
-    QSize mainWindowSize = mainWindow->size();
-    return {mainWindowSize.rwidth() / 2.0f, mainWindowSize.rheight() / 2.0f};
 }
 
 void Canvas::drawVertices(QPainter& painter) {
@@ -145,137 +187,43 @@ void Canvas::drawVertices(QPainter& painter) {
     }
 }
 
-QPointF newVector(const QLineF& direction, const qreal length) {
-    qreal directionLength = direction.length();
-    qreal sin = direction.dy() / directionLength;
-    qreal cos = direction.dx() / directionLength;
-
-    return {length * cos, length * sin};
-}
-
-QPointF newVector(const QLineF& direction, const QPointF shift) {
-    qreal directionLength = direction.length();
-    qreal sin = direction.dy() / directionLength;
-    qreal cos = direction.dx() / directionLength;
-
-    return {shift.x() * cos, shift.y() * sin};
-}
-
-QPointF closestPoint(QLineF line, QLineF normal, QPointF origin) {
-    QPointF intersectionPoint;
-    line.intersects(normal, &intersectionPoint);
-
-    QPointF closestPoint = intersectionPoint;
-
-    qreal distToStart = QLineF{intersectionPoint, line.p1()}.length();
-    qreal distToEnd = QLineF{intersectionPoint, line.p2()}.length();
-    qreal edgeLineLength = line.length();
-
-    if (distToStart > edgeLineLength || distToEnd > edgeLineLength) {
-        if (QLineF{origin, line.p1()}.length() > QLineF{origin, line.p2()}.length()) {
-            return line.p2();
-        }
-        else {
-            return line.p1();
-        }
-    }
-
-    return closestPoint;
-}
-
-QPointF closestPoint(QString text, QPointF textPos, QPointF textCenterOffset, QPointF origin) {
-    QLineF inTextLine{textPos - textCenterOffset, origin};
-    qreal textRadius = qSqrt(QPointF::dotProduct(textCenterOffset, textCenterOffset));
-    if (inTextLine.length() <= textRadius) return origin;
-    inTextLine.setLength(textRadius);
-    return inTextLine.p2();
-}
-
-void Canvas::drawArrow(QPainter& painter, QLineF invertedEdgeLine, qreal vertexRadius) {
-    QLineF line = invertedEdgeLine;
-    qreal distToCircle = sqrt(vertexRadius * vertexRadius - EDGE_BOTH_SHIFT * EDGE_BOTH_SHIFT / 4);
-    line.setLength(distToCircle);
-
-    QLineF wing1{line.p2(), invertedEdgeLine.p2()};
-    QLineF wing2{line.p2(), invertedEdgeLine.p2()};
-
-    wing1.setLength(ARROW_LENGTH);
-    wing2.setLength(ARROW_LENGTH);
-
-    wing1.setAngle(line.angle() + ARROW_ANGLE);
-    wing2.setAngle(line.angle() - ARROW_ANGLE);
-
-    painter.setOpacity(1);
-
-    QPainterPath path;
-    path.moveTo(wing1.p1());
-    path.lineTo(wing1.p2());
-    path.lineTo(wing2.p2());
-    painter.drawPath(path);
-}
-
-QLineF shiftLine(QLineF line, QLineF direction, qreal shiftValue) {
-    QPointF shift = newVector(direction, shiftValue);
-    return QLineF{line.p1() + shift, line.p2() + shift};
-}
-
-void Canvas::drawEdge(QPainter& painter, Edge *edge, QString text, bool isForceBoth) {
-    Vertex* start = vertices.at(edge->startId);
-    Vertex* end = vertices.at(edge->endId);
-    QLineF edgeLine = {start->pos, end->pos};
-    QLineF normal(screenCenter, {0, 0});
-    normal.setAngle(edgeLine.angle() + 90);
-
-    if (contains(vertices.at(edge->startId)->in.vertexId, edge->endId) || isForceBoth) {
-        edgeLine = shiftLine(edgeLine, normal, EDGE_BOTH_SHIFT / 2);
-    }
-
-    QPointF textCenterOffset = getTextCenterAlign(painter.fontMetrics(), text);
-    QPointF shift = newVector(normal, {EDGE_TEXT_SHIFT - textCenterOffset.x(), EDGE_TEXT_SHIFT + textCenterOffset.y()});
-    QPointF textPos = edgeLine.center() + textCenterOffset + shift;
-
-    qreal closestDist = std::min(QLineF{screenCenter, closestPoint(edgeLine, normal, screenCenter)}.length(),
-                                 QLineF{screenCenter, closestPoint(text, textPos, textCenterOffset, screenCenter)}.length());
-
-    if (closestDist - LINE_THICKNESS > halfScreenDiagonal) return;
-
-    bool isSelected = start->isSelected && end->isSelected || contains(selectedEdges, edge->id);
-    if (isSelected) {
-        painter.setBrush(Qt::green);
-        painter.setPen(Qt::green);
-    }
-    else if (contains(dCheckedEdges, edge->id)) {
-        painter.setBrush(dChekcedColor);
-        painter.setPen(dChekcedColor);
-    }
-
-    painter.drawLine(edgeLine);
-    drawArrow(painter, {edgeLine.p2(), edgeLine.p1()}, vertices.at(edge->endId)->radius);
-
-    if (isSelected) {
-        painter.setPen(Qt::darkGreen);
-    }
-    else {
-        painter.setPen(Qt::black);
-    }
-
-    painter.drawText(textPos, text);
-    painter.setBrush(Qt::black);
-    painter.setPen(Qt::black);
-}
-
 void Canvas::drawEdges(QPainter& painter) {
     painter.setBrush(Qt::black);
 
     for (const auto& [id, edge] : edges) {
-        bool betweenSelected = isVertexSelected(edge->startId) && isVertexSelected(edge->endId);
+        bool betweenSelected = vertices.at(edge->startId)->isSelected && vertices.at(edge->endId)->isSelected;
         bool isBoth = betweenSelected && intPressed1.size() > 0;
-        drawEdge(painter, edge, QString::number(edge->weight), isBoth);
+        edge->draw(this, painter, isBoth);
     }
 }
 
-int absCeil(qreal value) {
-    return value >= 0 ? ceil(value) : floor(value);
+void Canvas::drawFakeEdges(QPainter& painter) {
+    if (intPressed1.size() <= 0) return;
+
+    painter.setBrush(Qt::green);
+    painter.setPen(Qt::green);
+    painter.setOpacity(0.3);
+
+    fakeEdge->startId = selectedVertices[0];
+    fakeEdge->endId = selectedVertices[1];
+    qreal weight = getNumFromArray(intPressed1) / (floatExponent1 ? floatExponent1 : 1.f);
+    fakeEdge->displayText = QString::number(weight) + (floatExponent1 == 1 && isFirstLink ? "." : "");
+    fakeEdge->draw(this, painter, !isFirstLink);
+
+    if (isFirstLink) return;
+
+    fakeEdge->startId = selectedVertices[1];
+    fakeEdge->endId = selectedVertices[0];
+
+    if (intPressed2.size() <= 0) {
+        fakeEdge->weight = -1;
+        fakeEdge->displayText = "";
+    }
+    else {
+        weight = getNumFromArray(intPressed2)  / (floatExponent2 ? floatExponent2 : 1.f);
+        fakeEdge->displayText = QString::number(weight) + (floatExponent2 == 1 ? "." : "");
+    }
+    fakeEdge->draw(this, painter, true);
 }
 
 void Canvas::drawGrid(QPainter& painter, const QPointF& center) {
@@ -325,33 +273,6 @@ void Canvas::drawGrid(QPainter& painter, const QPointF& center) {
     painter.setPen(QPen(Qt::black, 1));
 }
 
-void Canvas::drawFakeEdges(QPainter& painter) {
-    if (intPressed1.size() <= 0) return;
-
-    painter.setBrush(Qt::green);
-    painter.setPen(Qt::green);
-    painter.setOpacity(0.3);
-
-    fakeEdge->startId = selectedVertices[0];
-    fakeEdge->endId = selectedVertices[1];
-    fakeEdge->weight = getNumFromArray(intPressed1) / (floatExponent1 ? floatExponent1 : 1.f);
-    drawEdge(painter, fakeEdge, QString::number(fakeEdge->weight) + (floatExponent1 == 1 && isFirstLink ? "." : ""), !isFirstLink);
-
-    if (isFirstLink) return;
-
-    fakeEdge->startId = selectedVertices[1];
-    fakeEdge->endId = selectedVertices[0];
-
-    if (intPressed2.size() <= 0) {
-        fakeEdge->weight = -1;
-        drawEdge(painter, fakeEdge, "", true);
-    }
-    else {
-        fakeEdge->weight = getNumFromArray(intPressed2)  / (floatExponent2 ? floatExponent2 : 1.f);
-        drawEdge(painter, fakeEdge, QString::number(fakeEdge->weight) + (floatExponent2 == 1 ? "." : ""), true);
-    }
-}
-
 void Canvas::drawTutorial(QPainter& painter) {
     int h = 5;
     for (const QString& line : tutorialText) {
@@ -385,155 +306,6 @@ void Canvas::paintEvent(QPaintEvent *event) {
     drawVertices(painter);
 }
 
-Vertex* Canvas::getClickedVertex(QPointF clickPos) {
-    Vertex* clickedVertex = nullptr;
-    for (const auto& [id, vertex] : vertices) {
-        bool isInRadius = QLineF(clickPos, vertex->pos).length() <= vertex->radius;
-        if (!isInRadius) continue;
-
-        clickedVertex = vertex;
-    }
-    return clickedVertex;
-}
-
-void Canvas::mousePressEvent(QMouseEvent *event) {
-    QPointF clickPos = getTransformedPos(event->pos());
-
-    if (event->button() == Qt::LeftButton) {
-        resetInputState();
-
-        if (currentTool == selectTool) {
-            if (event->modifiers() != Qt::ShiftModifier) {
-                deselectAllVertices();
-                selectedEdges.clear();
-            }
-
-            Vertex* clickedVertex = getClickedVertex(clickPos);
-            if (clickedVertex) {
-                if (!clickedVertex->isSelected) {
-                    selectVertex(clickedVertex->id);
-                }
-
-                draggingVertex = clickedVertex;
-                draggingOffset = clickedVertex->pos - clickPos;
-
-                update();
-                return;
-            }
-
-            // Getting clicked edge
-            QPointF center = getAbsoluteCenter();
-            screenCenter = (center - offset) / scaleFactor;
-            halfScreenDiagonal = qSqrt(QPointF::dotProduct(center, center)) / scaleFactor;
-
-            qreal closest = - 1;
-            int closestId = -1;
-            for (const auto& [id, edge] : edges) {
-                QLineF edgeLine = {vertices.at(edge->startId)->pos, vertices.at(edge->endId)->pos};
-                QLineF normal(clickPos, {0, 0});
-                normal.setAngle(edgeLine.angle() + 90);
-
-                if (contains(vertices.at(edge->startId)->in.vertexId, edge->endId)) {
-                    edgeLine = shiftLine(edgeLine, normal, EDGE_BOTH_SHIFT / 2);
-                }
-
-                QFontMetrics fm(font);
-                QString text = QString::number(edge->weight);
-                QPointF textCenterOffset = getTextCenterAlign(fm, text);
-                QPointF shift = newVector(normal, {EDGE_TEXT_SHIFT - textCenterOffset.x(), EDGE_TEXT_SHIFT + textCenterOffset.y()});
-                QPointF textPos = edgeLine.center() + textCenterOffset + shift;
-
-                qreal closestDist = std::min(QLineF{clickPos, closestPoint(edgeLine, normal, clickPos)}.length(),
-                                             QLineF{clickPos, closestPoint(text, textPos, textCenterOffset, clickPos)}.length());
-
-                if (closestDist > EDGE_SELECTION_RANGE) continue;
-
-                if (closest == -1) closest = closestDist;
-                if (closestId == -1) closestId = id;
-                if (closestDist < closest) {
-                    closest = closestDist;
-                    closestId = id;
-                }
-            }
-
-            if (closestId != -1) selectedEdges.push_back(closestId);
-
-            update();
-
-            return;
-        }
-
-        currentTool->onLeftClick(event);
-    }
-
-    if (event->button() == Qt::MiddleButton) {
-        lastMousePos = event->pos();
-        this->setCursor(PAN_CURSOR);
-    }
-}
-
-void Canvas::wheelEvent(QWheelEvent *event) {
-    QPointF cursorPos = event->position();
-    QPointF scenePos = (cursorPos - offset) / scaleFactor;
-
-    qreal factor = (event->angleDelta().y() > 0) ? 1.2 : 0.8;
-    if (scaleFactor > ZOOM_OUT_LIMIT || factor > 1) {
-        scaleFactor *= factor;
-    }
-
-    offset = cursorPos - scenePos * scaleFactor;
-
-    update();
-}
-
-void Canvas::mouseMoveEvent(QMouseEvent *event) {
-    if (draggingVertex && (event->buttons() & Qt::LeftButton)) {
-        QPointF transformedPos = getTransformedPos(event->pos());
-        QPointF mainVertPos = draggingVertex->pos;
-
-        for (int id : selectedVertices) {
-            QPointF vertOffset = mainVertPos - vertices.at(id)->pos;
-            vertices.at(id)->pos = transformedPos + draggingOffset - vertOffset;
-        }
-
-        update();
-    }
-
-    if (event->buttons() & Qt::MiddleButton) {
-        QPoint delta = event->pos() - lastMousePos;
-        lastMousePos = event->pos();
-        offset += delta;
-        update();
-    }
-}
-
-void Canvas::mouseReleaseEvent(QMouseEvent *event) {
-    draggingVertex = nullptr;
-    draggingOffset = {0, 0};
-    this->setCursor(currentTool->getCursor());
-}
-
-void removeFromBoth(std::vector<int>& vec1, std::vector<int>& vec2, int value) {
-    auto it = std::find(vec1.begin(), vec1.end(), value);
-    if (it != vec1.end()) {
-        size_t index = std::distance(vec1.begin(), it);
-        vec1.erase(it);
-        if (index < vec2.size()) {
-            vec2.erase(vec2.begin() + index);
-        }
-    }
-}
-
-void removeFromBothByFirst(std::vector<int>& vec1, std::vector<int>& vec2, int value) {
-    for (size_t i = 0; i < vec1.size(); ++i) {
-        if (vec1[i] == value) {
-            vec1.erase(vec1.begin() + i);
-            vec2.erase(vec2.begin() + i);
-            return;
-        }
-    }
-}
-
 void Canvas::deleteEdge(int id) {
     Edge *edge = edges.at(id);
     Vertex *start = vertices.at(edge->startId);
@@ -562,12 +334,6 @@ void Canvas::deleteVertex(int id) {
     vertices.erase(id);
 }
 
-void Canvas::delay(int milliseconds) {
-    QEventLoop loop;
-    QTimer::singleShot(milliseconds, &loop, &QEventLoop::quit);
-    loop.exec();
-}
-
 void Canvas::weightsToInf(Vertex& startVertex, std::vector<int>& unchecked) {
     unchecked.push_back(startVertex.id);
     startVertex.weight = INF;
@@ -580,23 +346,6 @@ void Canvas::weightsToInf(Vertex& startVertex, std::vector<int>& unchecked) {
         Vertex *vertex = vertices.at(id);
         weightsToInf(*vertex, unchecked);
     }
-}
-
-int Canvas::getMinWeightVertex(std::vector<int> vertexIds) {
-    int minId = vertexIds[0];
-    qreal minWeight = vertices.at(minId)->weight;
-
-    for (int id : vertexIds) {
-        qreal weight = vertices.at(id)->weight;
-
-        if (weight == INF) continue;
-        if (weight < minWeight) {
-            minId = id;
-            minWeight = weight;
-        }
-    }
-
-    return minId;
 }
 
 void Canvas::dijkstraAlgorithm(Vertex &startVertex, std::vector<int>& checked) {
@@ -711,6 +460,116 @@ void Canvas::cancelDijkstra() {
     dFirst = -1;
     dEnd = -1;
     dCurrVertex = -1;
+}
+
+void Canvas::wheelEvent(QWheelEvent *event) {
+    QPointF cursorPos = event->position();
+    QPointF scenePos = (cursorPos - offset) / scaleFactor;
+
+    qreal factor = (event->angleDelta().y() > 0) ? 1.2 : 0.8;
+    if (scaleFactor > ZOOM_OUT_LIMIT || factor > 1) {
+        scaleFactor *= factor;
+    }
+
+    offset = cursorPos - scenePos * scaleFactor;
+
+    update();
+}
+
+void Canvas::mousePressEvent(QMouseEvent *event) {
+    QPointF clickPos = getTransformedPos(event->pos());
+
+    if (event->button() == Qt::LeftButton) {
+        resetInputState();
+
+        if (currentTool == selectTool) {
+            if (event->modifiers() != Qt::ShiftModifier) {
+                deselectAllVertices();
+                selectedEdges.clear();
+            }
+
+            Vertex* clickedVertex = getClickedVertex(clickPos);
+            if (clickedVertex) {
+                if (!clickedVertex->isSelected) {
+                    selectVertex(clickedVertex->id);
+                }
+
+                draggingVertex = clickedVertex;
+                draggingOffset = clickedVertex->pos - clickPos;
+
+                update();
+                return;
+            }
+
+            // Getting clicked edge
+            QPointF center = getAbsoluteCenter();
+            screenCenter = (center - offset) / scaleFactor;
+            halfScreenDiagonal = qSqrt(QPointF::dotProduct(center, center)) / scaleFactor;
+
+            qreal closest = - 1;
+            int closestId = -1;
+            for (const auto& [id, edge] : edges) {
+                Vertex* start = vertices.at(edge->startId);
+                Vertex* end = vertices.at(edge->endId);
+                QLineF edgeLine = {start->pos, end->pos};
+                QLineF normal(clickPos, {0, 0});
+                normal.setAngle(edgeLine.angle() + 90);
+
+                QFontMetrics fontMetrics(font);
+                QPointF textPos;
+                qreal closestDist = edge->distanceToPoint(fontMetrics, &textPos, edgeLine,  normal, start, end, clickPos);
+
+                if (closestDist > EDGE_SELECTION_RANGE) continue;
+
+                if (closest == -1) closest = closestDist;
+                if (closestId == -1) closestId = id;
+                if (closestDist < closest) {
+                    closest = closestDist;
+                    closestId = id;
+                }
+            }
+
+            if (closestId != -1) selectedEdges.push_back(closestId);
+
+            update();
+
+            return;
+        }
+
+        currentTool->onLeftClick(event);
+    }
+
+    if (event->button() == Qt::MiddleButton) {
+        lastMousePos = event->pos();
+        this->setCursor(PAN_CURSOR);
+    }
+}
+
+void Canvas::mouseMoveEvent(QMouseEvent *event) {
+    if (draggingVertex && (event->buttons() & Qt::LeftButton)) {
+        QPointF transformedPos = getTransformedPos(event->pos());
+        QPointF mainVertPos = draggingVertex->pos;
+
+        for (int id : selectedVertices) {
+            QPointF vertOffset = mainVertPos - vertices.at(id)->pos;
+            vertices.at(id)->pos = transformedPos + draggingOffset - vertOffset;
+        }
+
+        update();
+    }
+
+    if (event->buttons() & Qt::MiddleButton) {
+        QPoint delta = event->pos() - lastMousePos;
+        lastMousePos = event->pos();
+        offset += delta;
+        update();
+    }
+}
+
+void Canvas::mouseReleaseEvent(QMouseEvent *event) {
+    draggingVertex = nullptr;
+    draggingOffset = {0, 0};
+    this->setCursor(currentTool->getCursor());
 }
 
 void Canvas::keyPressEvent(QKeyEvent *event) {
