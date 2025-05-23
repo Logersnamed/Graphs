@@ -32,7 +32,7 @@ void Vertex::draw(Canvas *canvas, QPainter& painter) {
     }
 
     if (weight > -2) {
-        if (contains(canvas->dEndAnim, id)) {
+        if (canvas->dEndAnim.find(id) != canvas->dEndAnim.end()) {
             painter.setBrush(dEndAnimColor);
         }
         else if (id == canvas->dEnd) {
@@ -41,7 +41,7 @@ void Vertex::draw(Canvas *canvas, QPainter& painter) {
         else if (id == canvas->dCurrVertex) {
             painter.setBrush(dCurrColor);
         }
-        else if (id == canvas->dFirst) {
+        else if (id == canvas->dStart) {
             painter.setBrush(dFirstColor);
         }
         else if (contains(canvas->dCheckedVertices, id)) {

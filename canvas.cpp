@@ -12,8 +12,6 @@
 #include <QEventLoop>
 #include <QTimer>
 
-#define INF -1
-
 typedef std::unordered_map<int, Vertex*> vertexMap;
 typedef std::unordered_map<int, Edge*> edgeMap;
 typedef std::unordered_map<int, int> intMap;
@@ -117,22 +115,16 @@ Vertex* Canvas::getClickedVertex(QPointF clickPos) {
     return clickedVertex;
 }
 
-// int Canvas::getMinWeightVertex(std::vector<int> vertexIds) {
-//     int minId = vertexIds[0];
-//     qreal minWeight = vertices.at(minId)->weight;
+void getSubGraphVertices(const Vertex &startVertex, const vertexMap &vertices, vertexMap &subGraph) {
+    subGraph.insert({startVertex.id, vertices.at(startVertex.id)});
 
-//     for (int id : vertexIds) {
-//         qreal weight = vertices.at(id)->weight;
-
-//         if (weight == INF) continue;
-//         if (weight < minWeight) {
-//             minId = id;
-//             minWeight = weight;
-//         }
-//     }
-
-//     return minId;
-// }
+    for (int id : startVertex.out.vertexId) {
+        if (subGraph.find(id) == subGraph.end()) {
+            Vertex *vertex = vertices.at(id);
+            getSubGraphVertices(*vertex, vertices, subGraph);
+        }
+    }
+}
 
 void Canvas::resetInputState() {
     intPressed1.clear();
@@ -179,10 +171,7 @@ void Canvas::createVertex(QPointF pos, int radius) {
 }
 
 void Canvas::linkVertices(int firstId, int secondId, qreal weight) {
-    if (contains(vertices.at(firstId)->out.vertexId, secondId)) {
-        qDebug() << "Already connected";
-        return;
-    }
+    if (contains(vertices.at(firstId)->out.vertexId, secondId) || firstId == secondId) return;
 
     vertices.at(secondId)->in.vertexId.push_back(firstId);
     vertices.at(secondId)->in.edgeId.push_back(totalEdges);
@@ -355,14 +344,21 @@ void Canvas::deleteVertex(int id) {
 }
 
 void Canvas::cancelDijkstra() {
+    for (const auto& [id, vertex] : vertices) {
+        vertex->weight = -2;
+    }
+
+    ++iteretion;
     isDijkstraRunning = false;
     dCheckedVertices.clear();
     dCheckedEdges.clear();
     dUnchecked.clear();
     dEndAnim.clear();
-    dFirst = -1;
+    dStart = -1;
     dEnd = -1;
     dCurrVertex = -1;
+
+    update();
 }
 
 void Canvas::wheelEvent(QWheelEvent *event) {
@@ -477,7 +473,6 @@ void Canvas::mouseReleaseEvent(QMouseEvent *event) {
 
 void Canvas::keyPressEvent(QKeyEvent *event) {
     int key = event->key();
-    int nativeScanCode = event->nativeScanCode();
 
     if (key == Qt::Key_Return || key == Qt::Key_E) {
         if (!intPressed1.size()) return;
@@ -563,87 +558,97 @@ void Canvas::keyPressEvent(QKeyEvent *event) {
         return;
     }
 
-    if (key == Qt::Key_V || nativeScanCode == 47) {
+    if (key == Qt::Key_V) {
         currentTool = selectTool;
         this->setCursor(currentTool->getCursor());
         return;
     }
 
-    if (key == Qt::Key_B || nativeScanCode == 48) {
+    if (key == Qt::Key_B) {
         currentTool = penTool;
         this->setCursor(currentTool->getCursor());
         return;
     }
 
-    if (key == Qt::Key_F || nativeScanCode == 33) {
-        for (const auto& [id, vertex] : vertices) {
-            vertex->weight = -2;
-        }
-
+    if (key == Qt::Key_F) {
         cancelDijkstra();
 
-        if (selectedVertices.size() != 1) {
-            update();
-            return;
-        }
+        if (selectedVertices.size() != 1) return;
 
-        Vertex *startVertex = vertices.at(selectedVertices[0]);
         selectedEdges.clear();
         deselectAllVertices();
         isDijkstraRunning = true;
+        int startIteretion = iteretion;
 
-        Dijkstra algorithm;
-        Events events = algorithm.run(*startVertex, vertices, edges);
+        Vertex *startVertex = vertices.at(selectedVertices[0]);
+        vertexMap subGraphVertices;
+        getSubGraphVertices(*startVertex, vertices, subGraphVertices);
+        Events events = Dijkstra::run(*startVertex, subGraphVertices, edges);
 
         for (Event event : events) {
-            if (!isDijkstraRunning) break;
+            if (startIteretion != iteretion) break;
 
             if (event.name == SET_START_VERTEX) {
-                qDebug() << "SET_START_VERTEX — Vertex ID:" << event.vertexId;
-                dFirst = event.vertexId;
+                dStart = event.vertexId;
+                delay(START_DELAY_MS);
             }
             else if (event.name == SET_CURRENT_VERTEX) {
-                qDebug() << "SET_CURRENT_VERTEX — Vertex ID:" << event.vertexId;
                 dCurrVertex = event.vertexId;
+                delay(STEP_DELAY_MS);
             }
             else if (event.name == SET_END_VERTEX) {
-                qDebug() << "SET_END_VERTEX — Vertex ID:" << event.vertexId;
                 dEnd = event.vertexId;
             }
             else if (event.name == CHECK_VERTEX) {
-                qDebug() << "CHECK_VERTEX — Vertex ID:" << event.vertexId;
                 dCheckedVertices.push_back(event.vertexId);
+                delay(STEP_DELAY_MS);
             }
             else if (event.name == CHECK_EDGE) {
-                qDebug() << "CHECK_EDGE — Edge ID:" << event.edgeId;
                 dCheckedEdges.push_back(event.edgeId);
+                // delay(STEP_DELAY_MS);
             }
             else if (event.name == UNCHECK_VERTEX) {
-                qDebug() << "UNCHECK_VERTEX — Vertex ID:" << event.vertexId;
                 dCheckedVertices.erase(std::remove(dCheckedVertices.begin(), dCheckedVertices.end(), event.vertexId), dCheckedVertices.end());
             }
             else if (event.name == UNCHECK_EDGE) {
-                qDebug() << "UNCHECK_EDGE — Edge ID:" << event.edgeId;
                 dCheckedEdges.erase(std::remove(dCheckedEdges.begin(), dCheckedEdges.end(), event.edgeId), dCheckedEdges.end());
+                delay(EDGE_STEP_DELAY_MS);
             }
             else if (event.name == SET_WEIGHT) {
-                qDebug() << "SET_WEIGHT — Vertex ID:" << event.vertexId;
                 vertices.at(event.vertexId)->weight = event.weight;
             }
-            else {
-                qDebug() << "Unknown event";
-            }
 
-            delay(300);
             update();
         }
+
+        for (const auto& vertex : subGraphVertices) {
+            if (startIteretion != iteretion) break;
+
+            delay(END_DELAY_MS);
+            dEndAnim.insert(vertex);
+            update();
+        }
+
+        for (int i = 0; i < 3; ++i) {
+            if (startIteretion != iteretion) break;
+
+            delay(FLICK_DELAY_MS);
+            dEndAnim = subGraphVertices;
+            update();
+
+            delay(FLICK_DELAY_MS);
+            dEndAnim.clear();
+            update();
+        }
+
+        isDijkstraRunning = false;
     }
 
-    if (key == Qt::Key_D || nativeScanCode == 32) {
+    if (key == Qt::Key_D) {
         deselectAllVertices();
     }
 
-    if (key == Qt::Key_A || nativeScanCode == 30) {
+    if (key == Qt::Key_A) {
         deselectAllVertices();
 
         for (auto& [id, vertex] : vertices) {
@@ -654,20 +659,18 @@ void Canvas::keyPressEvent(QKeyEvent *event) {
         return;
     }
 
-    if (key == Qt::Key_Z || nativeScanCode == 18) {
-        if (isDijkstraRunning) return;
-        if (selectedVertices.size() >= 2) {
-            for (int i = 0; i < selectedVertices.size(); ++i) {
-                for (int j = i + 1; j < selectedVertices.size(); ++j) {
-                    linkVertices(selectedVertices[i], selectedVertices[j], 1);
-                }
+    if (key == Qt::Key_Z) {
+        if (isDijkstraRunning || selectedVertices.size() < 2) return;
+
+        for (int i = 0; i < selectedVertices.size(); ++i) {
+            for (int j = i + 1; j < selectedVertices.size(); ++j) {
+                linkVertices(selectedVertices[i], selectedVertices[j], 1);
             }
         }
     }
 
     if (key == Qt::Key_Delete) {
-        if (selectedVertices.size() <= 0 && selectedEdges.size() <= 0) return;
-        if (isDijkstraRunning) return;
+        if (selectedVertices.size() <= 0 && selectedEdges.size() <= 0 || isDijkstraRunning) return;
 
         for (int id : selectedEdges) {
             deleteEdge(id);

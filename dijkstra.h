@@ -6,7 +6,6 @@
 
 #include <unordered_map>
 #include <vector>
-#include <algorithm>
 
 enum EventName {
     SET_START_VERTEX,
@@ -34,19 +33,14 @@ class Dijkstra {
 public:
     Dijkstra();
 
-    Events run(Vertex &startVertex, vertexMap vertices, edgeMap edges);
+    static Events run(Vertex &startVertex, vertexMap vertices, edgeMap edges);
 
 private:
-    Events events;
-
-    std::vector<int> dUnchecked;
-    std::vector<int> dCheckedEdges;
-    std::vector<int> dCheckedVertices;
-    int dCurrVertex = -1;
-
-    void logEvent(EventName name, int vertexId, int edgeId, qreal weight);
-    void weightsToInf(Vertex& startVertex, vertexMap vertices, std::vector<int>& unchecked);
-    void dijkstraAlgorithm(Vertex &startVertex, vertexMap vertices, edgeMap edges, std::vector<int>& checked);
+    static void logEvent(Events &events, EventName name, int vertexId, int edgeId, qreal weight);
+    static void weightsToInf(Vertex& startVertex, vertexMap vertices, std::vector<int>& unchecked, Events &events);
+    static int dijkstraAlgorithm(Vertex &startVertex, vertexMap vertices, edgeMap edges,
+                          std::vector<int>& checked, std::vector<int>& checkedEdges,
+                          std::vector<int>& unchecked, Events &events);
 };
 
 #endif // DIJKSTRA_H
