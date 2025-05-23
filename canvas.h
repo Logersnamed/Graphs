@@ -7,6 +7,7 @@
 #include "Tools/selecttool.h"
 #include "Tools/pentool.h"
 #include "mainwindow.h"
+#include "dijkstra.h"
 
 #include <vector>
 #include <unordered_map>
@@ -90,11 +91,6 @@ public:
     void deleteEdge(int id);
     void deleteVertex(int id);
 
-    void weightsToInf(Vertex& startVertex, std::vector<int>& checked);
-    void dijkstraAlgorithm(Vertex &startVertex, std::vector<int>& checked);
-    void showHide(std::vector<int>& empty, const std::vector<int> ref);
-    void dijkstraEndAnimation(const std::vector<int> checked);
-    void Dijkstra(Vertex &startVertex);
     void cancelDijkstra();
 
 private:
