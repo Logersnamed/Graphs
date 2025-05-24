@@ -16,11 +16,8 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
-    QSize widnowSize;
-
 private:
     Ui::MainWindow *ui;
-
-    void resizeEvent(QResizeEvent *event) override;
 };
+
 #endif // MAINWINDOW_H

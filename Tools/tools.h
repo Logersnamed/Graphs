@@ -7,13 +7,14 @@
 class Canvas;
 
 class Tools {
+
 public:
-    Tools();
+    Tools() {};
 
     QCursor cursor;
 
-    virtual void onLeftClick(QMouseEvent *event);
-    virtual QCursor getCursor();
+    virtual void onLeftClick(QMouseEvent *event) {};
+    virtual QCursor getCursor() {};
 };
 
 #endif // TOOLS_H

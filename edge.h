@@ -21,6 +21,10 @@ public:
     int id;
     int startId;
     int endId;
+    qreal weight;
+
+private:
+    void drawArrow(QPainter& painter, QLineF invertedEdgeLine, qreal vertexRadius);
 
     const qreal EDGE_TEXT_SHIFT = 15;
     const qreal EDGE_BOTH_SHIFT = 12;
@@ -28,11 +32,6 @@ public:
     const qreal ARROW_ANGLE = 13;
     const qreal LINE_THICKNESS = 5;
     const QColor dChekcedColor = QColor(255, 180, 162);
-
-    qreal weight;
-
-private:
-    void drawArrow(QPainter& painter, QLineF invertedEdgeLine, qreal vertexRadius);
 };
 
 #endif // EDGE_H

@@ -6,9 +6,7 @@
 #define INF -1
 
 Vertex::Vertex(QString displayName, int id, int radius, QPointF& pos, QWidget* parent)
-    : displayName(displayName), id(id), radius(radius), pos(pos) {
-
-}
+    : displayName(displayName), id(id), radius(radius), pos(pos) {}
 
 static bool contains(std::vector<int> vector, int value) {
     return std::find(vector.begin(), vector.end(), value) != vector.end();
@@ -32,19 +30,19 @@ void Vertex::draw(Canvas *canvas, QPainter& painter) {
     }
 
     if (weight > -2) {
-        if (canvas->dEndAnim.find(id) != canvas->dEndAnim.end()) {
+        if (canvas->djEndAnimation.find(id) != canvas->djEndAnimation.end()) {
             painter.setBrush(dEndAnimColor);
         }
-        else if (id == canvas->dEnd) {
+        else if (id == canvas->djEndVertex) {
             painter.setBrush(dEndColor);
         }
-        else if (id == canvas->dCurrVertex) {
+        else if (id == canvas->djCurrentVertex) {
             painter.setBrush(dCurrColor);
         }
-        else if (id == canvas->dStart) {
+        else if (id == canvas->djStartVertex) {
             painter.setBrush(dFirstColor);
         }
-        else if (contains(canvas->dCheckedVertices, id)) {
+        else if (contains(canvas->djCheckedVertices, id)) {
             painter.setBrush(dChekcedColor);
         }
     }

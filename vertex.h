@@ -10,6 +10,8 @@ class Vertex {
 public:
     Vertex(QString displayName, int id, int radius, QPointF& pos, QWidget* parent = nullptr);
 
+    void draw(Canvas *canvas, QPainter& painter);
+
     QString displayName;
     int id;
     int radius;
@@ -17,13 +19,12 @@ public:
     qreal weight = -2;
     bool isSelected = false;
 
-    void draw(Canvas *canvas, QPainter& painter);
-
     struct {
         std::vector<int> vertexId;
         std::vector<int> edgeId;
     } in, out;
 
+private:
     const QColor dFirstColor = QColor(255, 228, 212);
     const QColor dChekcedColor = QColor(255, 180, 162);
     const QColor dCurrColor = QColor(229, 152, 155);

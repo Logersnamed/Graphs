@@ -3,6 +3,7 @@
 
 #include <unordered_map>
 #include <algorithm>
+
 #include <QDebug>
 #include <QMouseEvent>
 #include <QPainter>
@@ -43,7 +44,6 @@ Canvas::Canvas(MainWindow *parentWindow, QWidget *parent) : QWidget(parent), mai
     linkVertices( 2 , 0 , 25 );
     linkVertices( 4 , 6 , 1 );
     linkVertices( 5 , 6 , 1 );
-
 }
 
 bool contains(std::vector<int> vector, int value) {
@@ -350,13 +350,12 @@ void Canvas::cancelDijkstra() {
 
     ++iteretion;
     isDijkstraRunning = false;
-    dCheckedVertices.clear();
-    dCheckedEdges.clear();
-    dUnchecked.clear();
-    dEndAnim.clear();
-    dStart = -1;
-    dEnd = -1;
-    dCurrVertex = -1;
+    djCheckedVertices.clear();
+    djCheckedEdges.clear();
+    djEndAnimation.clear();
+    djStartVertex = -1;
+    djEndVertex = -1;
+    djCurrentVertex = -1;
 
     update();
 }
@@ -589,29 +588,29 @@ void Canvas::keyPressEvent(QKeyEvent *event) {
             if (startIteretion != iteretion) break;
 
             if (event.name == SET_START_VERTEX) {
-                dStart = event.vertexId;
+                djStartVertex = event.vertexId;
                 delay(START_DELAY_MS);
             }
             else if (event.name == SET_CURRENT_VERTEX) {
-                dCurrVertex = event.vertexId;
+                djCurrentVertex = event.vertexId;
                 delay(STEP_DELAY_MS);
             }
             else if (event.name == SET_END_VERTEX) {
-                dEnd = event.vertexId;
+                djEndVertex = event.vertexId;
             }
             else if (event.name == CHECK_VERTEX) {
-                dCheckedVertices.push_back(event.vertexId);
+                djCheckedVertices.push_back(event.vertexId);
                 delay(STEP_DELAY_MS);
             }
             else if (event.name == CHECK_EDGE) {
-                dCheckedEdges.push_back(event.edgeId);
+                djCheckedEdges.push_back(event.edgeId);
                 // delay(STEP_DELAY_MS);
             }
             else if (event.name == UNCHECK_VERTEX) {
-                dCheckedVertices.erase(std::remove(dCheckedVertices.begin(), dCheckedVertices.end(), event.vertexId), dCheckedVertices.end());
+                djCheckedVertices.erase(std::remove(djCheckedVertices.begin(), djCheckedVertices.end(), event.vertexId), djCheckedVertices.end());
             }
             else if (event.name == UNCHECK_EDGE) {
-                dCheckedEdges.erase(std::remove(dCheckedEdges.begin(), dCheckedEdges.end(), event.edgeId), dCheckedEdges.end());
+                djCheckedEdges.erase(std::remove(djCheckedEdges.begin(), djCheckedEdges.end(), event.edgeId), djCheckedEdges.end());
                 delay(EDGE_STEP_DELAY_MS);
             }
             else if (event.name == SET_WEIGHT) {
@@ -625,7 +624,7 @@ void Canvas::keyPressEvent(QKeyEvent *event) {
             if (startIteretion != iteretion) break;
 
             delay(END_DELAY_MS);
-            dEndAnim.insert(vertex);
+            djEndAnimation.insert(vertex);
             update();
         }
 
@@ -633,11 +632,11 @@ void Canvas::keyPressEvent(QKeyEvent *event) {
             if (startIteretion != iteretion) break;
 
             delay(FLICK_DELAY_MS);
-            dEndAnim = subGraphVertices;
+            djEndAnimation = subGraphVertices;
             update();
 
             delay(FLICK_DELAY_MS);
-            dEndAnim.clear();
+            djEndAnimation.clear();
             update();
         }
 

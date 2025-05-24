@@ -3,8 +3,6 @@
 
 #include "tools.h"
 
-// #include "../canvas.h"
-
 #include <QMouseEvent>
 
 class Canvas;

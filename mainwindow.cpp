@@ -10,7 +10,3 @@ MainWindow::MainWindow(QWidget *parent)
 MainWindow::~MainWindow() {
     delete ui;
 }
-
-void MainWindow::resizeEvent(QResizeEvent *event) {
-    widnowSize = this->size();
-}

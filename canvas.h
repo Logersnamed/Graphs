@@ -32,13 +32,14 @@ public:
     const int VERTEX_RADIUS = 25;
     QFont font = {"Latin Modern Math", 16};
 
-    vertexMap dEndAnim;
     std::vector<int> selectedEdges;
-    std::vector<int> dCheckedEdges;
-    std::vector<int> dCheckedVertices;
-    int dStart = -1;
-    int dEnd = -1;
-    int dCurrVertex = -1;
+
+    std::vector<int> djCheckedEdges;
+    std::vector<int> djCheckedVertices;
+    vertexMap djEndAnimation;
+    int djStartVertex = -1;
+    int djEndVertex = -1;
+    int djCurrentVertex = -1;
 
 private:
     int getNumFromArray(std::vector<int> array);
@@ -92,7 +93,7 @@ private:
     const qreal GRID_GAP = 16;
     const int GRID_DIVISON = 5;
 
-    const int STEP_DELAY_MS = 300;
+    const int STEP_DELAY_MS = 200;
     const int START_DELAY_MS = 800;
     const int EDGE_STEP_DELAY_MS = STEP_DELAY_MS / 2;
     const int END_DELAY_MS = STEP_DELAY_MS / 4;
@@ -128,7 +129,6 @@ private:
     int floatExponent2 = 0;
 
     bool isDijkstraRunning = false;
-    std::vector<int> dUnchecked;
     int iteretion = 0;
 };
 

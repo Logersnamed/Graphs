@@ -6,13 +6,16 @@
 #include <QMouseEvent>
 
 class SelectTool : public Tools {
+
 public:
-    SelectTool();
+    SelectTool() {};
 
     QCursor  cursor = Qt::ArrowCursor;
 
-    void onLeftClick(QMouseEvent *event) override;
-    QCursor getCursor() override;
+    void onLeftClick(QMouseEvent *event) override {};
+    QCursor getCursor() override {
+        return cursor;
+    };
 };
 
 #endif // SELECTTOOL_H

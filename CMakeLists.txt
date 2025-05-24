@@ -26,9 +26,9 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         canvas.h canvas.cpp
         vertex.h vertex.cpp
         edge.h edge.cpp
-        Tools/tools.h Tools/tools.cpp
+        Tools/tools.h
         Tools/pentool.h Tools/pentool.cpp
-        Tools/selecttool.h Tools/selecttool.cpp
+        Tools/selecttool.h
         dijkstra.h dijkstra.cpp
 
     )

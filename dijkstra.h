@@ -30,6 +30,7 @@ typedef std::unordered_map<int, Edge*> edgeMap;
 typedef std::vector<Event> Events;
 
 class Dijkstra {
+
 public:
     Dijkstra();
 

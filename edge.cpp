@@ -6,9 +6,7 @@
 #include <QFontMetrics>
 
 Edge::Edge(QString displayText, int edgeId, int fristId, int secodnId, qreal weight, QWidget* parent)
-    : displayText(displayText), id(edgeId), startId(fristId), endId(secodnId), weight(weight) {
-
-}
+    : displayText(displayText), id(edgeId), startId(fristId), endId(secodnId), weight(weight) {}
 
 static bool contains(std::vector<int> vector, int value) {
     return std::find(vector.begin(), vector.end(), value) != vector.end();
@@ -105,7 +103,6 @@ qreal Edge::distanceToPoint(QFontMetrics fontMetrics, QPointF *textPos,
 
     return std::min(QLineF{point, closestPoint(edgeLine, normal, point)}.length(),
                     QLineF{point, closestPoint(displayText, *textPos, textCenterOffset, point)}.length());
-
 }
 
 void Edge::draw(Canvas *canvas, QPainter& painter, bool isForceBoth) {
@@ -129,7 +126,7 @@ void Edge::draw(Canvas *canvas, QPainter& painter, bool isForceBoth) {
         painter.setBrush(Qt::green);
         painter.setPen(Qt::green);
     }
-    else if (contains(canvas->dCheckedEdges, id)) {
+    else if (contains(canvas->djCheckedEdges, id)) {
         painter.setBrush(dChekcedColor);
         painter.setPen(dChekcedColor);
     }
