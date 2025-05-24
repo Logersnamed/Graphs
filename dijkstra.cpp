@@ -1,15 +1,10 @@
+#include "utils.h"
 #include "dijkstra.h"
 
 #define INF -1
 #define x -1
 
-Dijkstra::Dijkstra() {
-
-}
-
-static bool contains(std::vector<int> vector, int value) {
-    return std::find(vector.begin(), vector.end(), value) != vector.end();
-}
+Dijkstra::Dijkstra() {}
 
 void Dijkstra::logEvent(Events &events, EventName name, int vertexId, int edgeId, qreal weight) {
     events.push_back({
@@ -42,7 +37,7 @@ void Dijkstra::weightsToInf(Vertex& startVertex, vertexMap vertices, std::vector
     logEvent(events, SET_WEIGHT, startVertex.id, x, INF);
 
     for (int id : startVertex.out.vertexId) {
-        if (!contains(unchecked, id)) {
+        if (!utils::contains(unchecked, id)) {
             Vertex *vertex = vertices.at(id);
             weightsToInf(*vertex, vertices, unchecked, events);
         }
@@ -56,7 +51,7 @@ int Dijkstra::dijkstraAlgorithm(Vertex &startVertex, vertexMap vertices, edgeMap
 
     // Process incoming edges
     for (int id : startVertex.in.edgeId) {
-        if (contains(checkedEdges, id) || !contains(checked, edges.at(id)->startId)) continue;
+        if (utils::contains(checkedEdges, id) || !utils::contains(checked, edges.at(id)->startId)) continue;
 
         checkedEdges.push_back(id);
         logEvent(events, CHECK_EDGE, x, id, x);
@@ -69,7 +64,7 @@ int Dijkstra::dijkstraAlgorithm(Vertex &startVertex, vertexMap vertices, edgeMap
         Vertex *vertex = vertices.at(startVertex.out.vertexId[i]);
         Edge *edge = edges.at(startVertex.out.edgeId[i]);
 
-        bool isCheckedVertex = contains(checked, vertex->id);
+        bool isCheckedVertex = utils::contains(checked, vertex->id);
 
         checked.push_back(vertex->id);
         checkedEdges.push_back(edge->id);

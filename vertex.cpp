@@ -1,3 +1,4 @@
+#include "utils.h"
 #include "vertex.h"
 #include "canvas.h"
 
@@ -7,17 +8,6 @@
 
 Vertex::Vertex(QString displayName, int id, int radius, QPointF& pos, QWidget* parent)
     : displayName(displayName), id(id), radius(radius), pos(pos) {}
-
-static bool contains(std::vector<int> vector, int value) {
-    return std::find(vector.begin(), vector.end(), value) != vector.end();
-}
-
-static QPointF getTextCenterAlign(QFontMetrics fm, QString text) {
-    int width = fm.horizontalAdvance(text);
-    int height = fm.ascent() - fm.descent();
-
-    return {-width / 2.0f, height / 2.0f};
-}
 
 void Vertex::draw(Canvas *canvas, QPainter& painter) {
     qreal distToCenter = QLineF{canvas->getScreenCenter(), pos}.length();
@@ -42,7 +32,7 @@ void Vertex::draw(Canvas *canvas, QPainter& painter) {
         else if (id == canvas->djStartVertex) {
             painter.setBrush(dFirstColor);
         }
-        else if (contains(canvas->djCheckedVertices, id)) {
+        else if (utils::contains(canvas->djCheckedVertices, id)) {
             painter.setBrush(dChekcedColor);
         }
     }
@@ -53,7 +43,7 @@ void Vertex::draw(Canvas *canvas, QPainter& painter) {
     canvas->font.setItalic(false);
     painter.setFont(canvas->font);
 
-    QPointF textPos = pos + getTextCenterAlign(painter.fontMetrics(), displayName);
+    QPointF textPos = pos + utils::getTextCenterAlign(painter.fontMetrics(), displayName);
 
     painter.drawText(textPos, displayName);
 
@@ -64,7 +54,7 @@ void Vertex::draw(Canvas *canvas, QPainter& painter) {
         painter.setFont(weightFont);
 
         QString weightText = weight == INF ? "∞" : QString::number(weight);
-        painter.drawText(pos + WEIGHT_TEXT_OFFSET + getTextCenterAlign(painter.fontMetrics(), weightText), weightText);
+        painter.drawText(pos + WEIGHT_TEXT_OFFSET + utils::getTextCenterAlign(painter.fontMetrics(), weightText), weightText);
         painter.setPen(Qt::black);
     }
 }

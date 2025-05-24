@@ -41,7 +41,7 @@ public:
     int djEndVertex = -1;
     int djCurrentVertex = -1;
 
-private:
+// private:
     int getNumFromArray(std::vector<int> array);
     QPointF getAbsoluteCenter();
     Vertex* getClickedVertex(QPointF clickPos);
@@ -117,7 +117,7 @@ private:
     QPointF screenCenter;
     qreal halfScreenDiagonal;
 
-    SelectTool *selectTool = new SelectTool();
+    SelectTool *selectTool = new SelectTool(this);
     PenTool *penTool = new PenTool(this);
     Tools *currentTool = selectTool;
 

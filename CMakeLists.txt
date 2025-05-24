@@ -28,8 +28,10 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         edge.h edge.cpp
         Tools/tools.h
         Tools/pentool.h Tools/pentool.cpp
-        Tools/selecttool.h
+
         dijkstra.h dijkstra.cpp
+        utils.h
+        Tools/selecttool.h Tools/selecttool.cpp
 
     )
 # Define target properties for Android with Qt 6 as:

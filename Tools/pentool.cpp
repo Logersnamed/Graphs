@@ -4,12 +4,14 @@
 #include <QMouseEvent>
 #include <QDebug>
 
-PenTool::PenTool(Canvas *canvas) : canvas(canvas) {}
+PenTool::PenTool(Canvas *canvas) : canvas(canvas) {
+    cursor = penToolCursor;
+}
 
 void PenTool::onLeftClick(QMouseEvent *event) {
     canvas->createVertex(canvas->getTransformedPos(event->pos()), canvas->VERTEX_RADIUS);
 }
 
-QCursor PenTool::getCursor() {
-    return cursor;
-}
+// QCursor PenTool::getCursor() {
+//     return cursor;
+// }

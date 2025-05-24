@@ -1,3 +1,4 @@
+#include "utils.h"
 #include "canvas.h"
 #include "dijkstra.h"
 
@@ -21,47 +22,6 @@ Canvas::Canvas(MainWindow *parentWindow, QWidget *parent) : QWidget(parent), mai
     setFocusPolicy(Qt::StrongFocus);
     setMouseTracking(true);
     setFocus();
-
-    // for (int i = 0; i < 300; ++i) createVertex({0, i * 10.f}, VERTEX_RADIUS);
-
-    createVertex( QPointF(226,473) , 25 );
-    createVertex( QPointF(259,305) , 25 );
-    linkVertices( 0 , 1 , 6 );
-    createVertex( QPointF(504,240) , 25 );
-    linkVertices( 1 , 2 , 3 );
-    createVertex( QPointF(656,313) , 25 );
-    linkVertices( 2 , 3 , 2 );
-    createVertex( QPointF(629,502) , 25 );
-    linkVertices( 3 , 4 , 3 );
-    createVertex( QPointF(439,557) , 25 );
-    linkVertices( 0 , 5 , 2 );
-    linkVertices( 5 , 4 , 8 );
-    createVertex( QPointF(455,401) , 25 );
-    linkVertices( 0 , 6 , 6 );
-    linkVertices( 1 , 6 , 3 );
-    linkVertices( 6 , 4 , 9 );
-    linkVertices( 6 , 3 , 12.5 );
-    linkVertices( 2 , 0 , 25 );
-    linkVertices( 4 , 6 , 1 );
-    linkVertices( 5 , 6 , 1 );
-}
-
-bool contains(std::vector<int> vector, int value) {
-    return std::find(vector.begin(), vector.end(), value) != vector.end();
-}
-
-int absCeil(qreal value) {
-    return value >= 0 ? ceil(value) : floor(value);
-}
-
-void removeFromBothByFirst(std::vector<int>& vec1, std::vector<int>& vec2, int value) {
-    for (size_t i = 0; i < vec1.size(); ++i) {
-        if (vec1[i] == value) {
-            vec1.erase(vec1.begin() + i);
-            vec2.erase(vec2.begin() + i);
-            return;
-        }
-    }
 }
 
 void delay(int milliseconds) {
@@ -171,7 +131,7 @@ void Canvas::createVertex(QPointF pos, int radius) {
 }
 
 void Canvas::linkVertices(int firstId, int secondId, qreal weight) {
-    if (contains(vertices.at(firstId)->out.vertexId, secondId) || firstId == secondId) return;
+    if (utils::contains(vertices.at(firstId)->out.vertexId, secondId) || firstId == secondId) return;
 
     vertices.at(secondId)->in.vertexId.push_back(firstId);
     vertices.at(secondId)->in.edgeId.push_back(totalEdges);
@@ -249,10 +209,10 @@ void Canvas::drawGrid(QPainter& painter, const QPointF& center) {
     const qreal gap = scaleFactor > 0.8 ? GRID_GAP : GRID_GAP * GRID_DIVISON;
     const int actualDivision = scaleFactor > 0.8 ? GRID_DIVISON : 1;
 
-    const int left   = absCeil((leftBorder - canvasCenter.x() - LINE_THICKNESS) / gap);
-    const int right  = absCeil((rightBorder - canvasCenter.x() + LINE_THICKNESS) / gap);
-    const int top    = absCeil((topBorder - canvasCenter.y() - LINE_THICKNESS) / gap);
-    const int bottom = absCeil((bottomBorder - canvasCenter.y() + LINE_THICKNESS) / gap);
+    const int left   = utils::absCeil((leftBorder - canvasCenter.x() - LINE_THICKNESS) / gap);
+    const int right  = utils::absCeil((rightBorder - canvasCenter.x() + LINE_THICKNESS) / gap);
+    const int top    = utils::absCeil((topBorder - canvasCenter.y() - LINE_THICKNESS) / gap);
+    const int bottom = utils::absCeil((bottomBorder - canvasCenter.y() + LINE_THICKNESS) / gap);
 
     int lightness = 150;
     QColor gridColor = QColor(lightness, lightness, lightness, 255);
@@ -320,8 +280,8 @@ void Canvas::deleteEdge(int id) {
     Vertex *start = vertices.at(edge->startId);
     Vertex *end = vertices.at(edge->endId);
 
-    removeFromBothByFirst(start->out.edgeId, start->out.vertexId, id);
-    removeFromBothByFirst(end->in.edgeId, end->in.vertexId, id);
+    utils::removeFromBothByFirst(start->out.edgeId, start->out.vertexId, id);
+    utils::removeFromBothByFirst(end->in.edgeId, end->in.vertexId, id);
 
     delete edge;
     edges.erase(id);
@@ -375,64 +335,8 @@ void Canvas::wheelEvent(QWheelEvent *event) {
 }
 
 void Canvas::mousePressEvent(QMouseEvent *event) {
-    QPointF clickPos = getTransformedPos(event->pos());
-
     if (event->button() == Qt::LeftButton) {
         resetInputState();
-
-        if (currentTool == selectTool) {
-            if (event->modifiers() != Qt::ShiftModifier) {
-                deselectAllVertices();
-                selectedEdges.clear();
-            }
-
-            Vertex* clickedVertex = getClickedVertex(clickPos);
-            if (clickedVertex) {
-                if (!clickedVertex->isSelected) {
-                    selectVertex(clickedVertex->id);
-                }
-
-                draggingVertex = clickedVertex;
-                draggingOffset = clickedVertex->pos - clickPos;
-
-                update();
-                return;
-            }
-
-            // Getting clicked edge
-            QPointF center = getAbsoluteCenter();
-            screenCenter = (center - offset) / scaleFactor;
-            halfScreenDiagonal = qSqrt(QPointF::dotProduct(center, center)) / scaleFactor;
-
-            qreal closest = - 1;
-            int closestId = -1;
-            for (const auto& [id, edge] : edges) {
-                Vertex* start = vertices.at(edge->startId);
-                Vertex* end = vertices.at(edge->endId);
-                QLineF edgeLine = {start->pos, end->pos};
-                QLineF normal(clickPos, {0, 0});
-                normal.setAngle(edgeLine.angle() + 90);
-
-                QFontMetrics fontMetrics(font);
-                QPointF textPos;
-                qreal closestDist = edge->distanceToPoint(fontMetrics, &textPos, edgeLine,  normal, start, end, clickPos);
-
-                if (closestDist > EDGE_SELECTION_RANGE) continue;
-
-                if (closest == -1) closest = closestDist;
-                if (closestId == -1) closestId = id;
-                if (closestDist < closest) {
-                    closest = closestDist;
-                    closestId = id;
-                }
-            }
-
-            if (closestId != -1) selectedEdges.push_back(closestId);
-
-            update();
-
-            return;
-        }
 
         currentTool->onLeftClick(event);
     }
@@ -486,7 +390,7 @@ void Canvas::keyPressEvent(QKeyEvent *event) {
 
     if (key >= '0' && key <= '9') {
         if (selectedVertices.size() != 2) return;
-        if (contains(vertices.at(selectedVertices[0])->out.vertexId, selectedVertices[1])) return;
+        if (utils::contains(vertices.at(selectedVertices[0])->out.vertexId, selectedVertices[1])) return;
         if (isDijkstraRunning) return;
 
         if (isFirstLink) {
@@ -497,7 +401,7 @@ void Canvas::keyPressEvent(QKeyEvent *event) {
             if (floatExponent1) floatExponent1 *= 10;
         }
         else {
-            if (contains(vertices.at(selectedVertices[1])->out.vertexId, selectedVertices[0])) return;
+            if (utils::contains(vertices.at(selectedVertices[1])->out.vertexId, selectedVertices[0])) return;
             if (intPressed2.size() == 0 && key == 0 ) return;
             if (intPressed2.size() == 6) return;
 

@@ -2,20 +2,19 @@
 #define SELECTTOOL_H
 
 #include "tools.h"
-
 #include <QMouseEvent>
 
+class Canvas;
+
 class SelectTool : public Tools {
-
 public:
-    SelectTool() {};
+    SelectTool(Canvas* canvas);
 
-    QCursor  cursor = Qt::ArrowCursor;
+    void onLeftClick(QMouseEvent *event) override;
 
-    void onLeftClick(QMouseEvent *event) override {};
-    QCursor getCursor() override {
-        return cursor;
-    };
+private:
+    Canvas* canvas;
+    const QCursor selectToolCursor = Qt::ArrowCursor;
 };
 
 #endif // SELECTTOOL_H

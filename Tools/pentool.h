@@ -11,13 +11,11 @@ class PenTool : public Tools {
 public:
     PenTool(Canvas *canvas);
 
-    QCursor cursor = Qt::PointingHandCursor;
-
     void onLeftClick(QMouseEvent *event) override;
-    QCursor getCursor() override;
 
 protected:
     Canvas *canvas;
+    QCursor penToolCursor = Qt::PointingHandCursor;
 };
 
 #endif // PENTOOL_H

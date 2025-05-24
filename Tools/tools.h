@@ -11,10 +11,12 @@ class Tools {
 public:
     Tools() {};
 
-    QCursor cursor;
-
     virtual void onLeftClick(QMouseEvent *event) {};
-    virtual QCursor getCursor() {};
+
+    QCursor getCursor() const { return cursor; }
+
+protected:
+    QCursor cursor;
 };
 
 #endif // TOOLS_H
