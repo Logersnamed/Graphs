@@ -23,9 +23,9 @@ class Canvas : public QWidget {
 public:
     Canvas(MainWindow *parentWindow, QWidget *parent = nullptr);
 
-    Vertex* getVertex(int id);
-    QPointF getScreenCenter();
-    qreal getHalfScreenDiagonal();
+    Vertex* getVertex(int id) { return vertices.at(id); };
+    QPointF getScreenCenter() { return screenCenter; };
+    qreal getHalfScreenDiagonal() { return halfScreenDiagonal; };
     QPointF getTransformedPos(const QPointF& pos);
     void createVertex(QPointF pos, int radius);
 
@@ -67,8 +67,10 @@ public:
     void mouseMoveEvent(QMouseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
+    void keyReleaseEvent(QKeyEvent *event) override;
 
     void cancelDijkstra();
+    void visualizeDijkstra(const vertexMap &graphVertices, const Events &events, int startIteretion);
 
     const QCursor PAN_CURSOR = Qt::ClosedHandCursor;
     QFont textFont = {"Latin Modern Math", 13};
@@ -91,6 +93,7 @@ public:
     const qreal EDGE_SELECTION_RANGE = 15;
     const qreal LINE_THICKNESS = 5;
     const qreal GRID_GAP = 16;
+    const int gridLightnes = 150;
     const int GRID_DIVISON = 5;
 
     const int STEP_DELAY_MS = 200;
@@ -121,6 +124,7 @@ public:
     PenTool *penTool = new PenTool(this);
     Tools *currentTool = selectTool;
 
+    bool isShiftPressed = false;
     Edge *fakeEdge = new Edge("", -1, 0, 0, 0, this);
     bool isFirstLink = true;
     std::vector<int> intPressed1;

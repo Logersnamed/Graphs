@@ -30,18 +30,6 @@ void delay(int milliseconds) {
     loop.exec();
 }
 
-Vertex* Canvas::getVertex(int id) {
-    return vertices.at(id);
-}
-
-QPointF Canvas::getScreenCenter() {
-    return screenCenter;
-}
-
-qreal Canvas::getHalfScreenDiagonal() {
-    return halfScreenDiagonal;
-}
-
 QPointF Canvas::getTransformedPos(const QPointF& pos) {
     QTransform transform;
     transform.translate(offset.x(), offset.y());
@@ -126,8 +114,6 @@ void Canvas::createVertex(QPointF pos, int radius) {
     ++totalVertices;
 
     update();
-
-    // qDebug() << "createVertex(" << pos << "," << radius << ");";
 }
 
 void Canvas::linkVertices(int firstId, int secondId, qreal weight) {
@@ -143,8 +129,6 @@ void Canvas::linkVertices(int firstId, int secondId, qreal weight) {
     ++totalEdges;
 
     update();
-
-    // qDebug() << "linkVertices(" << firstId << "," << secondId << "," << weight << ");";
 }
 
 void Canvas::drawVertices(QPainter& painter) {
@@ -169,35 +153,38 @@ void Canvas::drawEdges(QPainter& painter) {
 void Canvas::drawFakeEdges(QPainter& painter) {
     if (intPressed1.size() <= 0) return;
 
-    painter.setBrush(Qt::green);
-    painter.setPen(Qt::green);
-    painter.setOpacity(0.3);
+    fakeEdge->startId = selectedVertices[isShiftPressed];
+    fakeEdge->endId = selectedVertices[!isShiftPressed];
+    if (!utils::contains(vertices.at(fakeEdge->startId)->out.vertexId, fakeEdge->endId)) {
+        painter.setBrush(Qt::green);
+        painter.setPen(Qt::green);
+        painter.setOpacity(0.3);
 
-    fakeEdge->startId = selectedVertices[0];
-    fakeEdge->endId = selectedVertices[1];
-    qreal weight = getNumFromArray(intPressed1) / (floatExponent1 ? floatExponent1 : 1.f);
-    fakeEdge->displayText = QString::number(weight) + (floatExponent1 == 1 && isFirstLink ? "." : "");
-    fakeEdge->draw(this, painter, !isFirstLink);
+        qreal weight = getNumFromArray(intPressed1) / (floatExponent1 ? floatExponent1 : 1.f);
+        fakeEdge->displayText = QString::number(weight) + (floatExponent1 == 1 && isFirstLink ? "." : "");
+        fakeEdge->draw(this, painter, !isFirstLink);
+    }
 
     if (isFirstLink) return;
 
-    fakeEdge->startId = selectedVertices[1];
-    fakeEdge->endId = selectedVertices[0];
+    fakeEdge->startId = selectedVertices[!isShiftPressed];
+    fakeEdge->endId = selectedVertices[isShiftPressed];
+
+    if (utils::contains(vertices.at(fakeEdge->startId)->out.vertexId, fakeEdge->endId)) return;
 
     if (intPressed2.size() <= 0) {
         fakeEdge->weight = -1;
         fakeEdge->displayText = "";
     }
     else {
-        weight = getNumFromArray(intPressed2)  / (floatExponent2 ? floatExponent2 : 1.f);
+        qreal weight = getNumFromArray(intPressed2)  / (floatExponent2 ? floatExponent2 : 1.f);
         fakeEdge->displayText = QString::number(weight) + (floatExponent2 == 1 ? "." : "");
     }
+
     fakeEdge->draw(this, painter, true);
 }
 
 void Canvas::drawGrid(QPainter& painter, const QPointF& center) {
-    // For now it doens't really care 'bout canvasCenter
-    QPointF canvasCenter{0, 0};
     const qreal xCenterOffset = center.x() / scaleFactor;
     const qreal yCenterOffset = center.y() / scaleFactor;
 
@@ -209,18 +196,16 @@ void Canvas::drawGrid(QPainter& painter, const QPointF& center) {
     const qreal gap = scaleFactor > 0.8 ? GRID_GAP : GRID_GAP * GRID_DIVISON;
     const int actualDivision = scaleFactor > 0.8 ? GRID_DIVISON : 1;
 
-    const int left   = utils::absCeil((leftBorder - canvasCenter.x() - LINE_THICKNESS) / gap);
-    const int right  = utils::absCeil((rightBorder - canvasCenter.x() + LINE_THICKNESS) / gap);
-    const int top    = utils::absCeil((topBorder - canvasCenter.y() - LINE_THICKNESS) / gap);
-    const int bottom = utils::absCeil((bottomBorder - canvasCenter.y() + LINE_THICKNESS) / gap);
+    const int left   = utils::absCeil((leftBorder - LINE_THICKNESS) / gap);
+    const int right  = utils::absCeil((rightBorder + LINE_THICKNESS) / gap);
+    const int top    = utils::absCeil((topBorder - LINE_THICKNESS) / gap);
+    const int bottom = utils::absCeil((bottomBorder + LINE_THICKNESS) / gap);
 
-    int lightness = 150;
-    QColor gridColor = QColor(lightness, lightness, lightness, 255);
-
+    QColor gridColor = QColor(gridLightnes, gridLightnes, gridLightnes, 255);
     for (int i = left; i <= right; ++i) {
         painter.setPen(QPen(gridColor, 0.1f));
 
-        if (i == 0) painter.setPen(QPen(QColor(lightness - 50, lightness - 50, lightness - 50, 255), 1));
+        if (i == 0) painter.setPen(QPen(QColor(gridLightnes - 50, gridLightnes - 50, gridLightnes - 50, 255), 1));
         else if (i % actualDivision * actualDivision == 0) painter.setPen(QPen(gridColor, 0.5f));
         else if (i % actualDivision == 0) painter.setPen(QPen(gridColor, 0.3f));
 
@@ -231,7 +216,7 @@ void Canvas::drawGrid(QPainter& painter, const QPointF& center) {
     for (int i = top; i <= bottom; ++i) {
         painter.setPen(QPen(gridColor, 0.1f));
 
-        if (i == 0) painter.setPen(QPen(QColor(lightness - 50, lightness - 50, lightness - 50, 255), 1));
+        if (i == 0) painter.setPen(QPen(QColor(gridLightnes - 50, gridLightnes - 50, gridLightnes - 50, 255), 1));
         else if (i % actualDivision * actualDivision == 0) painter.setPen(QPen(gridColor, 0.5f));
         else if (i % actualDivision == 0) painter.setPen(QPen(gridColor, 0.3f));
 
@@ -320,6 +305,63 @@ void Canvas::cancelDijkstra() {
     update();
 }
 
+void Canvas::visualizeDijkstra(const vertexMap &graphVertices, const Events &events, int startIteretion) {
+    for (Event event : events) {
+        if (startIteretion != iteretion) break;
+
+        if (event.name == SET_START_VERTEX) {
+            djStartVertex = event.vertexId;
+            delay(START_DELAY_MS);
+        }
+        else if (event.name == SET_CURRENT_VERTEX) {
+            djCurrentVertex = event.vertexId;
+            delay(STEP_DELAY_MS);
+        }
+        else if (event.name == SET_END_VERTEX) {
+            djEndVertex = event.vertexId;
+        }
+        else if (event.name == CHECK_VERTEX) {
+            djCheckedVertices.push_back(event.vertexId);
+            delay(STEP_DELAY_MS);
+        }
+        else if (event.name == CHECK_EDGE) {
+            djCheckedEdges.push_back(event.edgeId);
+        }
+        else if (event.name == UNCHECK_VERTEX) {
+            djCheckedVertices.erase(std::remove(djCheckedVertices.begin(), djCheckedVertices.end(), event.vertexId), djCheckedVertices.end());
+        }
+        else if (event.name == UNCHECK_EDGE) {
+            djCheckedEdges.erase(std::remove(djCheckedEdges.begin(), djCheckedEdges.end(), event.edgeId), djCheckedEdges.end());
+            delay(EDGE_STEP_DELAY_MS);
+        }
+        else if (event.name == SET_WEIGHT) {
+            vertices.at(event.vertexId)->weight = event.weight;
+        }
+
+        update();
+    }
+
+    for (const auto& vertex : graphVertices) {
+        if (startIteretion != iteretion) break;
+
+        delay(END_DELAY_MS);
+        djEndAnimation.insert(vertex);
+        update();
+    }
+
+    for (int i = 0; i < 3; ++i) {
+        if (startIteretion != iteretion) break;
+
+        delay(FLICK_DELAY_MS);
+        djEndAnimation = graphVertices;
+        update();
+
+        delay(FLICK_DELAY_MS);
+        djEndAnimation.clear();
+        update();
+    }
+}
+
 void Canvas::wheelEvent(QWheelEvent *event) {
     QPointF cursorPos = event->position();
     QPointF scenePos = (cursorPos - offset) / scaleFactor;
@@ -381,11 +423,15 @@ void Canvas::keyPressEvent(QKeyEvent *event) {
         if (!intPressed1.size()) return;
         if (selectedVertices.size() != 2) return;
 
-        linkVertices(selectedVertices[0], selectedVertices[1], getNumFromArray(intPressed1) / (floatExponent1 ? floatExponent1 : 1.f));
-        if (intPressed2.size()) linkVertices(selectedVertices[1], selectedVertices[0], getNumFromArray(intPressed2) / (floatExponent2 ? floatExponent2 : 1.f));
+        linkVertices(selectedVertices[isShiftPressed], selectedVertices[!isShiftPressed], getNumFromArray(intPressed1) / (floatExponent1 ? floatExponent1 : 1.f));
+        if (intPressed2.size()) linkVertices(selectedVertices[!isShiftPressed], selectedVertices[isShiftPressed], getNumFromArray(intPressed2) / (floatExponent2 ? floatExponent2 : 1.f));
 
         selectedEdges.clear();
         deselectFirstVertex();
+
+        resetInputState();
+        update();
+        return;
     }
 
     if (key >= '0' && key <= '9') {
@@ -488,67 +534,19 @@ void Canvas::keyPressEvent(QKeyEvent *event) {
         getSubGraphVertices(*startVertex, vertices, subGraphVertices);
         Events events = Dijkstra::run(*startVertex, subGraphVertices, edges);
 
-        for (Event event : events) {
-            if (startIteretion != iteretion) break;
-
-            if (event.name == SET_START_VERTEX) {
-                djStartVertex = event.vertexId;
-                delay(START_DELAY_MS);
-            }
-            else if (event.name == SET_CURRENT_VERTEX) {
-                djCurrentVertex = event.vertexId;
-                delay(STEP_DELAY_MS);
-            }
-            else if (event.name == SET_END_VERTEX) {
-                djEndVertex = event.vertexId;
-            }
-            else if (event.name == CHECK_VERTEX) {
-                djCheckedVertices.push_back(event.vertexId);
-                delay(STEP_DELAY_MS);
-            }
-            else if (event.name == CHECK_EDGE) {
-                djCheckedEdges.push_back(event.edgeId);
-                // delay(STEP_DELAY_MS);
-            }
-            else if (event.name == UNCHECK_VERTEX) {
-                djCheckedVertices.erase(std::remove(djCheckedVertices.begin(), djCheckedVertices.end(), event.vertexId), djCheckedVertices.end());
-            }
-            else if (event.name == UNCHECK_EDGE) {
-                djCheckedEdges.erase(std::remove(djCheckedEdges.begin(), djCheckedEdges.end(), event.edgeId), djCheckedEdges.end());
-                delay(EDGE_STEP_DELAY_MS);
-            }
-            else if (event.name == SET_WEIGHT) {
-                vertices.at(event.vertexId)->weight = event.weight;
-            }
-
-            update();
-        }
-
-        for (const auto& vertex : subGraphVertices) {
-            if (startIteretion != iteretion) break;
-
-            delay(END_DELAY_MS);
-            djEndAnimation.insert(vertex);
-            update();
-        }
-
-        for (int i = 0; i < 3; ++i) {
-            if (startIteretion != iteretion) break;
-
-            delay(FLICK_DELAY_MS);
-            djEndAnimation = subGraphVertices;
-            update();
-
-            delay(FLICK_DELAY_MS);
-            djEndAnimation.clear();
-            update();
-        }
+        visualizeDijkstra(subGraphVertices, events, startIteretion);
 
         isDijkstraRunning = false;
+        resetInputState();
+        return;
     }
 
     if (key == Qt::Key_D) {
         deselectAllVertices();
+
+        resetInputState();
+        update();
+        return;
     }
 
     if (key == Qt::Key_A) {
@@ -570,6 +568,10 @@ void Canvas::keyPressEvent(QKeyEvent *event) {
                 linkVertices(selectedVertices[i], selectedVertices[j], 1);
             }
         }
+
+        resetInputState();
+        update();
+        return;
     }
 
     if (key == Qt::Key_Delete) {
@@ -584,9 +586,24 @@ void Canvas::keyPressEvent(QKeyEvent *event) {
             deleteVertex(id);
         }
         selectedVertices.clear();
+
+        resetInputState();
+        update();
+        return;
     }
 
-    resetInputState();
+    if (key == Qt::Key_Shift) {
+        qDebug() << "pressed";
+        isShiftPressed = true;
+        update();
+        return;
+    }
+}
 
-    update();
+void Canvas::keyReleaseEvent(QKeyEvent *event) {
+    if (event->key() == Qt::Key_Shift) {
+        isShiftPressed = false;
+        qDebug() << "Unpressed";
+        update();
+    }
 }
