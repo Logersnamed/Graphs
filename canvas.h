@@ -6,22 +6,21 @@
 #include "Tools/tools.h"
 #include "Tools/selecttool.h"
 #include "Tools/pentool.h"
-#include "mainwindow.h"
 #include "dijkstra.h"
 
 #include <vector>
 #include <unordered_map>
 
-#include <QWidget>
+#include <QMainWindow>
 
 typedef std::unordered_map<int, Vertex*> vertexMap;
 typedef std::unordered_map<int, Edge*> edgeMap;
 
-class Canvas : public QWidget {
+class Canvas : public QMainWindow  {
     Q_OBJECT
 
 public:
-    Canvas(MainWindow *parentWindow, QWidget *parent = nullptr);
+    Canvas(QWidget *parent = nullptr);
 
     Vertex* getClickedVertex(QPointF clickPos);
     Vertex* getVertex(int id) { return vertices.at(id); };
@@ -116,8 +115,6 @@ private:
     int totalEdges = 0;
 
     std::vector<int> selectedVertices;
-
-    MainWindow *mainWindow;
 
     QPoint lastMousePos;
 

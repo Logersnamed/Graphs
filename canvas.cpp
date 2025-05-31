@@ -13,7 +13,7 @@
 #include <QEventLoop>
 #include <QTimer>
 
-Canvas::Canvas(MainWindow *parentWindow, QWidget *parent) : QWidget(parent), mainWindow(parentWindow) {
+Canvas::Canvas(QWidget *parent) : QMainWindow(parent) {
     setFocusPolicy(Qt::StrongFocus);
     setMouseTracking(true);
     setFocus();
@@ -43,8 +43,8 @@ int Canvas::getNumFromArray(std::vector<int> array) {
 }
 
 QPointF Canvas::getAbsoluteCenter() {
-    QSize mainWindowSize = mainWindow->size();
-    return {mainWindowSize.rwidth() / 2.0f, mainWindowSize.rheight() / 2.0f};
+    QSize windowSize = this->size();
+    return {windowSize.rwidth() / 2.0f, windowSize.rheight() / 2.0f};
 }
 
 Vertex* Canvas::getClickedVertex(QPointF clickPos) {
