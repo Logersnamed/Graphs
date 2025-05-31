@@ -5,7 +5,6 @@
 #include <unordered_map>
 #include <algorithm>
 
-#include <QDebug>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QKeyEvent>
@@ -13,10 +12,6 @@
 #include <QPainterPath>
 #include <QEventLoop>
 #include <QTimer>
-
-typedef std::unordered_map<int, Vertex*> vertexMap;
-typedef std::unordered_map<int, Edge*> edgeMap;
-typedef std::unordered_map<int, int> intMap;
 
 Canvas::Canvas(MainWindow *parentWindow, QWidget *parent) : QWidget(parent), mainWindow(parentWindow) {
     setFocusPolicy(Qt::StrongFocus);
@@ -228,14 +223,23 @@ void Canvas::drawGrid(QPainter& painter, const QPointF& center) {
 }
 
 void Canvas::drawTutorial(QPainter& painter) {
-    int h = 5;
-    for (const QString& line : tutorialText) {
-        h += 18;
+    const int startY = 5;
+    const int lineHeight = 18;
+    const int textPaddingX = 6;
+    const int textPaddingY = 18;
+    const int rectOffsetY = 14;
+    const int textOffsetX = 13;
 
-        QRect textRect(10, h - 14, painter.fontMetrics().horizontalAdvance(line) + 6, 18);
+    int y = startY;
+
+    for (const QString& line : tutorialText) {
+        y += lineHeight;
+
+        int textWidth = painter.fontMetrics().horizontalAdvance(line);
+        QRect textRect(10, y - rectOffsetY, textWidth + textPaddingX, lineHeight);
         painter.fillRect(textRect, Qt::white);
 
-        painter.drawText(13, h, line);
+        painter.drawText(textOffsetX, y, line);
     }
 }
 
@@ -593,7 +597,6 @@ void Canvas::keyPressEvent(QKeyEvent *event) {
     }
 
     if (key == Qt::Key_Shift) {
-        qDebug() << "pressed";
         isShiftPressed = true;
         update();
         return;
@@ -603,7 +606,6 @@ void Canvas::keyPressEvent(QKeyEvent *event) {
 void Canvas::keyReleaseEvent(QKeyEvent *event) {
     if (event->key() == Qt::Key_Shift) {
         isShiftPressed = false;
-        qDebug() << "Unpressed";
         update();
     }
 }

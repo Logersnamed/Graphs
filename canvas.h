@@ -23,15 +23,22 @@ class Canvas : public QWidget {
 public:
     Canvas(MainWindow *parentWindow, QWidget *parent = nullptr);
 
+    Vertex* getClickedVertex(QPointF clickPos);
     Vertex* getVertex(int id) { return vertices.at(id); };
     QPointF getScreenCenter() { return screenCenter; };
-    qreal getHalfScreenDiagonal() { return halfScreenDiagonal; };
     QPointF getTransformedPos(const QPointF& pos);
+    QPointF getAbsoluteCenter();
+    qreal getHalfScreenDiagonal() { return halfScreenDiagonal; };
     void createVertex(QPointF pos, int radius);
+    void deselectAllVertices();
+    void selectVertex(int id);
 
+    const qreal EDGE_SELECTION_RANGE = 15;
     const int VERTEX_RADIUS = 25;
     QFont font = {"Latin Modern Math", 16};
 
+    vertexMap vertices;
+    edgeMap edges;
     std::vector<int> selectedEdges;
 
     std::vector<int> djCheckedEdges;
@@ -41,16 +48,20 @@ public:
     int djEndVertex = -1;
     int djCurrentVertex = -1;
 
-// private:
-    int getNumFromArray(std::vector<int> array);
-    QPointF getAbsoluteCenter();
-    Vertex* getClickedVertex(QPointF clickPos);
-    int getMinWeightVertex(std::vector<int> vertexIds);
+    qreal scaleFactor = 1.0;
+    QPointF offset = {0, 0};
 
+    qreal halfScreenDiagonal;
+    QPointF screenCenter;
+
+    Vertex* draggingVertex = nullptr;
+    QPointF draggingOffset;
+
+private:
+    int getNumFromArray(std::vector<int> array);
+    int getMinWeightVertex(std::vector<int> vertexIds);
     void resetInputState();
-    void selectVertex(int id);
     void deselectFirstVertex();
-    void deselectAllVertices();
     void linkVertices(int firstId, int secondId, qreal weight);
     void deleteEdge(int id);
     void deleteVertex(int id);
@@ -90,7 +101,6 @@ public:
     };
 
     const qreal ZOOM_OUT_LIMIT = 0.25;
-    const qreal EDGE_SELECTION_RANGE = 15;
     const qreal LINE_THICKNESS = 5;
     const qreal GRID_GAP = 16;
     const int gridLightnes = 150;
@@ -104,21 +114,12 @@ public:
 
     int totalVertices = 0;
     int totalEdges = 0;
-    vertexMap vertices;
-    edgeMap edges;
+
     std::vector<int> selectedVertices;
 
     MainWindow *mainWindow;
 
     QPoint lastMousePos;
-    QPointF offset = {0, 0};
-    qreal scaleFactor = 1.0;
-
-    Vertex* draggingVertex = nullptr;
-    QPointF draggingOffset;
-
-    QPointF screenCenter;
-    qreal halfScreenDiagonal;
 
     SelectTool *selectTool = new SelectTool(this);
     PenTool *penTool = new PenTool(this);

@@ -32,8 +32,6 @@ typedef std::vector<Event> Events;
 class Dijkstra {
 
 public:
-    Dijkstra();
-
     static Events run(Vertex &startVertex, vertexMap vertices, edgeMap edges);
 
 private:

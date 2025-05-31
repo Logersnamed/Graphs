@@ -11,7 +11,3 @@ PenTool::PenTool(Canvas *canvas) : canvas(canvas) {
 void PenTool::onLeftClick(QMouseEvent *event) {
     canvas->createVertex(canvas->getTransformedPos(event->pos()), canvas->VERTEX_RADIUS);
 }
-
-// QCursor PenTool::getCursor() {
-//     return cursor;
-// }

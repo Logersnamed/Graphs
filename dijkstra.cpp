@@ -4,8 +4,6 @@
 #define INF -1
 #define x -1
 
-Dijkstra::Dijkstra() {}
-
 void Dijkstra::logEvent(Events &events, EventName name, int vertexId, int edgeId, qreal weight) {
     events.push_back({
         name,
