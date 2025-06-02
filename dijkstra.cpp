@@ -5,12 +5,7 @@
 #define x -1
 
 void Dijkstra::logEvent(Events &events, EventName name, int vertexId, int edgeId, qreal weight) {
-    events.push_back({
-        name,
-        vertexId,
-        edgeId,
-        weight
-    });
+    events.emplace_back(Event{name, vertexId, edgeId, weight});
 }
 
 int getMinWeightVertex(std::vector<int> vertexIds, vertexMap vertices) {
@@ -43,13 +38,12 @@ void Dijkstra::weightsToInf(Vertex& startVertex, vertexMap vertices, std::vector
 }
 
 int Dijkstra::dijkstraAlgorithm(Vertex &startVertex, vertexMap vertices, edgeMap edges,
-                                 std::vector<int>& checked, std::vector<int>& checkedEdges,
-                                 std::vector<int>& unchecked, Events &events) {
+                                std::vector<int>& checkedEdges, std::vector<int>& unchecked, Events &events) {
     int currentVertex = startVertex.id;
 
     // Process incoming edges
     for (int id : startVertex.in.edgeId) {
-        if (utils::contains(checkedEdges, id) || !utils::contains(checked, edges.at(id)->startId)) continue;
+        if (utils::contains(checkedEdges, id) || utils::contains(unchecked, edges.at(id)->startId)) continue;
 
         checkedEdges.push_back(id);
         logEvent(events, CHECK_EDGE, x, id, x);
@@ -62,38 +56,36 @@ int Dijkstra::dijkstraAlgorithm(Vertex &startVertex, vertexMap vertices, edgeMap
         Vertex *vertex = vertices.at(startVertex.out.vertexId[i]);
         Edge *edge = edges.at(startVertex.out.edgeId[i]);
 
-        bool isCheckedVertex = utils::contains(checked, vertex->id);
+        if (!utils::contains(checkedEdges, edge->id)) {
+            checkedEdges.push_back(edge->id);
+            logEvent(events, CHECK_EDGE, x, edge->id, x);
+        }
 
-        checked.push_back(vertex->id);
-        checkedEdges.push_back(edge->id);
-        logEvent(events, CHECK_EDGE, x, edge->id, x);
-        logEvent(events, CHECK_VERTEX, vertex->id, x, x);
+        if (utils::contains(unchecked, vertex->id)) {
+            logEvent(events, CHECK_VERTEX, vertex->id, x, x);
 
-        if (!isCheckedVertex) {
             qreal distToVertex = startVertex.weight + edge->weight;
             if (vertex->weight > distToVertex || vertex->weight == INF) {
                 vertex->weight = distToVertex;
                 logEvent(events, SET_WEIGHT, vertex->id, x, distToVertex);
             }
 
-            checked.pop_back();
             checkedEdges.pop_back();
             logEvent(events, UNCHECK_VERTEX, vertex->id, x, x);
             logEvent(events, UNCHECK_EDGE, x, edge->id, x);
         }
     }
 
-    checked.push_back(currentVertex);
     unchecked.erase(std::remove(unchecked.begin(), unchecked.end(), currentVertex), unchecked.end());
     logEvent(events, CHECK_VERTEX, currentVertex, x, x);
 
     // Select next vertex
     while (unchecked.size() != 0) {
         int nextId = getMinWeightVertex(unchecked, vertices);
-        if (nextId == -1) break;
+        if (nextId == INF) break;
 
         Vertex* nextVertex = vertices.at(nextId);
-        currentVertex = dijkstraAlgorithm(*nextVertex, vertices, edges, checked, checkedEdges, unchecked, events);
+        currentVertex = dijkstraAlgorithm(*nextVertex, vertices, edges, checkedEdges, unchecked, events);
     }
 
     return currentVertex;
@@ -101,9 +93,7 @@ int Dijkstra::dijkstraAlgorithm(Vertex &startVertex, vertexMap vertices, edgeMap
 
 Events Dijkstra::run(Vertex &startVertex, vertexMap vertices, edgeMap edges) {
     Events events;
-    std::vector<int> unchecked;
-    std::vector<int> checkedEdges;
-    std::vector<int> checkedVertices;
+    std::vector<int> unchecked, checkedEdges;
 
     weightsToInf(startVertex, vertices, unchecked, events);
     startVertex.weight = 0;
@@ -111,7 +101,7 @@ Events Dijkstra::run(Vertex &startVertex, vertexMap vertices, edgeMap edges) {
     logEvent(events, SET_START_VERTEX, startVertex.id, x, x);
     logEvent(events, SET_WEIGHT, startVertex.id, x, 0);
 
-    int lastVertex = dijkstraAlgorithm(startVertex, vertices, edges, checkedVertices, checkedEdges, unchecked, events);
+    int lastVertex = dijkstraAlgorithm(startVertex, vertices, edges, checkedEdges, unchecked, events);
 
     logEvent(events, SET_END_VERTEX, lastVertex, x, x);
 

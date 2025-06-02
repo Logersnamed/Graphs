@@ -320,6 +320,8 @@ void Canvas::visualizeDijkstra(const vertexMap &graphVertices, const Events &eve
         else if (event.name == SET_CURRENT_VERTEX) {
             djCurrentVertex = event.vertexId;
             delay(STEP_DELAY_MS);
+            update();
+            delay(STEP_DELAY_MS);
         }
         else if (event.name == SET_END_VERTEX) {
             djEndVertex = event.vertexId;

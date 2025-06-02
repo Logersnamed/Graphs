@@ -105,7 +105,7 @@ private:
     const int gridLightnes = 150;
     const int GRID_DIVISON = 5;
 
-    const int STEP_DELAY_MS = 200;
+    const int STEP_DELAY_MS = 400;
     const int START_DELAY_MS = 800;
     const int EDGE_STEP_DELAY_MS = STEP_DELAY_MS / 2;
     const int END_DELAY_MS = STEP_DELAY_MS / 4;
