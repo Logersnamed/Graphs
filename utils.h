@@ -6,6 +6,9 @@
 #include <QFontMetrics>
 #include <QString>
 
+constexpr int INF = -1;
+constexpr int UNDEFINED = -2;
+
 namespace utils {
     template <typename Container, typename T>
     bool contains(const Container& container, const T& value) {

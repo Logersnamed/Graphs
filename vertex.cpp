@@ -4,10 +4,10 @@
 
 #include <QPainter>
 
-#define INF -1
-
 Vertex::Vertex(QString displayName, int id, int radius, QPointF& pos, QWidget* parent)
-    : displayName(displayName), id(id), radius(radius), pos(pos) {}
+    : displayName(displayName), id(id), radius(radius), pos(pos) {
+    weight = UNDEFINED;
+}
 
 void Vertex::draw(Canvas *canvas, QPainter& painter) {
     qreal distToCenter = QLineF{canvas->getScreenCenter(), pos}.length();

@@ -16,7 +16,7 @@ public:
     int id;
     int radius;
     QPointF pos;
-    qreal weight = -2;
+    qreal weight;
     bool isSelected = false;
 
     struct {
