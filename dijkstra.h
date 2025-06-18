@@ -38,7 +38,7 @@ private:
     static void logEvent(Events &events, EventName name, int vertexId, int edgeId, qreal weight);
     static void weightsToInf(Vertex& startVertex, vertexMap vertices, std::vector<int>& unchecked, Events &events);
     static int dijkstraAlgorithm(Vertex &startVertex, vertexMap vertices, edgeMap edges,
-                                 std::vector<int>& checkedEdges, std::vector<int>& unchecked, Events &events);
+                                 std::vector<int>& checkedEdges, std::vector<int>& unchecked, std::vector<int>& checked, Events &events);
 };
 
 #endif // DIJKSTRA_H

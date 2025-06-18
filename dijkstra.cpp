@@ -35,12 +35,13 @@ void Dijkstra::weightsToInf(Vertex& startVertex, vertexMap vertices, std::vector
 }
 
 int Dijkstra::dijkstraAlgorithm(Vertex &startVertex, vertexMap vertices, edgeMap edges,
-                                std::vector<int>& checkedEdges, std::vector<int>& unchecked, Events &events) {
+                                std::vector<int>& checkedEdges, std::vector<int>& unchecked,
+                                std::vector<int>& checked, Events &events) {
     int currentVertex = startVertex.id;
 
     // Process incoming edges
     for (int id : startVertex.in.edgeId) {
-        if (utils::contains(checkedEdges, id) || utils::contains(unchecked, edges.at(id)->startId)) continue;
+        if (utils::contains(checkedEdges, id) || !utils::contains(checked, edges.at(id)->startId)) continue;
 
         checkedEdges.push_back(id);
         logEvent(events, CHECK_EDGE, UNDEFINED, id, UNDEFINED);
@@ -60,6 +61,7 @@ int Dijkstra::dijkstraAlgorithm(Vertex &startVertex, vertexMap vertices, edgeMap
 
         if (utils::contains(unchecked, vertex->id)) {
             logEvent(events, CHECK_VERTEX, vertex->id, UNDEFINED, UNDEFINED);
+            checked.push_back(vertex->id);
 
             qreal distToVertex = startVertex.weight + edge->weight;
             if (vertex->weight > distToVertex || vertex->weight == INF) {
@@ -67,12 +69,14 @@ int Dijkstra::dijkstraAlgorithm(Vertex &startVertex, vertexMap vertices, edgeMap
                 logEvent(events, SET_WEIGHT, vertex->id, UNDEFINED, distToVertex);
             }
 
+            checked.pop_back();
             checkedEdges.pop_back();
             logEvent(events, UNCHECK_VERTEX, vertex->id, UNDEFINED, UNDEFINED);
             logEvent(events, UNCHECK_EDGE, UNDEFINED, edge->id, UNDEFINED);
         }
     }
 
+    checked.push_back(currentVertex);
     unchecked.erase(std::remove(unchecked.begin(), unchecked.end(), currentVertex), unchecked.end());
     logEvent(events, CHECK_VERTEX, currentVertex, UNDEFINED, UNDEFINED);
 
@@ -82,7 +86,7 @@ int Dijkstra::dijkstraAlgorithm(Vertex &startVertex, vertexMap vertices, edgeMap
         if (nextId == INF) break;
 
         Vertex* nextVertex = vertices.at(nextId);
-        currentVertex = dijkstraAlgorithm(*nextVertex, vertices, edges, checkedEdges, unchecked, events);
+        currentVertex = dijkstraAlgorithm(*nextVertex, vertices, edges, checkedEdges, unchecked, checked, events);
     }
 
     return currentVertex;
@@ -90,7 +94,7 @@ int Dijkstra::dijkstraAlgorithm(Vertex &startVertex, vertexMap vertices, edgeMap
 
 Events Dijkstra::run(Vertex &startVertex, vertexMap vertices, edgeMap edges) {
     Events events;
-    std::vector<int> unchecked, checkedEdges;
+    std::vector<int> unchecked, checked, checkedEdges;
 
     weightsToInf(startVertex, vertices, unchecked, events);
     startVertex.weight = 0;
@@ -98,7 +102,7 @@ Events Dijkstra::run(Vertex &startVertex, vertexMap vertices, edgeMap edges) {
     logEvent(events, SET_START_VERTEX, startVertex.id, UNDEFINED, UNDEFINED);
     logEvent(events, SET_WEIGHT, startVertex.id, UNDEFINED, 0);
 
-    int lastVertex = dijkstraAlgorithm(startVertex, vertices, edges, checkedEdges, unchecked, events);
+    int lastVertex = dijkstraAlgorithm(startVertex, vertices, edges, checkedEdges, unchecked, checked, events);
 
     logEvent(events, SET_END_VERTEX, lastVertex, UNDEFINED, UNDEFINED);
 
